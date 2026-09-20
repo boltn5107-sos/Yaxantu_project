@@ -3,6 +3,7 @@
 namespace App\Http\Resources;
 
 use App\Models\User;
+use App\Support\Media;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -18,7 +19,7 @@ class UserResource extends JsonResource
             'phone' => $this->phone,
             'phone_verified_at' => $this->phone_verified_at?->toIso8601String(),
             'locale' => $this->locale,
-            'avatar' => $this->avatar_path,
+            'avatar' => Media::url($this->avatar_path),
             'status' => $this->status,
             'roles' => $this->roleSlugs(),
             'profile_type' => $this->profileType(),
@@ -42,7 +43,7 @@ class UserResource extends JsonResource
                 'status' => $this->seller->status,
                 'is_onboarded' => (bool) $this->seller->is_onboarded,
                 'onboarding_step' => (int) $this->seller->onboarding_step,
-                'logo' => $this->seller->logo_path,
+                'logo' => Media::url($this->seller->logo_path),
                 'trust_score' => (int) $this->seller->trust_score,
             ]),
             'courier' => $this->whenLoaded('courier', fn () => [

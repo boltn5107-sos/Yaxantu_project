@@ -88,12 +88,8 @@ export default function CheckoutPage() {
     if (authLoading || cartLoading) return;
     if (!user) {
       router.push("/auth/login?next=/checkout");
-      return;
     }
-    if (cart.count === 0 && !submitting) {
-      router.push("/cart");
-    }
-  }, [user, authLoading, cartLoading, cart.count, submitting, router]);
+  }, [user, authLoading, cartLoading, router]);
 
   const update =
     (key: keyof typeof form) =>

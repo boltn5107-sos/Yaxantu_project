@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { Check, ShoppingCart, Star, BadgeCheck } from "lucide-react";
 import { addToCart, type Product } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
-import { formatPrice } from "@/lib/utils";
+import { formatPrice, fallbackImage } from "@/lib/utils";
 
 export default function ProductCard({
   product,
@@ -22,7 +22,7 @@ export default function ProductCard({
   const [added, setAdded] = useState(false);
 
   const image =
-    (!imageError && product.thumbnail) || "/api/placeholder/400/300";
+    (!imageError && product.thumbnail) || fallbackImage(400, 300, product.id);
 
   const handleAdd = async (e: React.MouseEvent) => {
     e.preventDefault();

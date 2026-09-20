@@ -15,10 +15,48 @@ use Illuminate\Support\Str;
 class ProductSeeder extends Seeder
 {
     /**
-     * Catalogue de démonstration : vendeurs vérifiés et produits répartis
-     * dans les catégories principales. Les valeurs monétaires sont en FCFA
-     * (price_minor = montant entier, la devise XOF n'a pas de sous-unité).
+     * Photographies réelles (Unsplash) par slug de produit. Utilisées comme
+     * images publiques des produits de démonstration, accessibles sans
+     * dépendre de fichiers locaux.
      */
+    private const MEDIA = [
+        'smartphone-pro-x200' => [
+            'photo-1511707171634-5f897ff02aa9',
+            'photo-1571781926291-c477ebfd024b',
+        ],
+        'casque-audio-bluetooth' => [
+            'photo-1505740420928-5e560c06d30e',
+            'photo-1484704849700-f032a568e944',
+        ],
+        'montre-connectee-sport' => [
+            'photo-1523275335684-37898b6baf30',
+            'photo-1579586337278-3befd40fd17a',
+        ],
+        'chaussures-de-course-premium' => [
+            'photo-1542291026-7eec264c27ff',
+            'photo-1595950653106-6c9ebd614d3a',
+        ],
+        'sac-a-main-en-cuir' => [
+            'photo-1590874103328-eac38a683ce7',
+            'photo-1591561954557-26941169b49e',
+        ],
+        'set-ustensiles-de-cuisine' => [
+            'photo-1556910103-1c02745aae4d',
+            'photo-1545167622-3a6ac756afa4',
+        ],
+        'ventilateur-colonne-silencieux' => [
+            'photo-1585155770447-2f66e2a397b5',
+        ],
+        'panier-de-fruits-frais' => [
+            'photo-1610832958506-aa56368176cf',
+            'photo-1542838132-92c53300491e',
+        ],
+        'sac-de-riz-25-kg' => [
+            'photo-1586201375761-83865001e31c',
+            'photo-1596797038530-2c107229654b',
+        ],
+    ];
+
     public function run(): void
     {
         $sellers = collect([
@@ -213,12 +251,18 @@ class ProductSeeder extends Seeder
 
             $product->images()->delete();
 
-            for ($i = 1; $i <= $data['images']; $i++) {
+            $photoSlugs = self::MEDIA[$slug] ?? [];
+            $images = array_map(
+                fn ($photo) => "https://images.unsplash.com/{$photo}?auto=format&fit=crop&w=800&h=600&q=80",
+                $photoSlugs,
+            );
+
+            foreach ($images as $i => $url) {
                 $product->images()->create([
-                    'path' => "/images/products/{$slug}-{$i}.jpg",
+                    'path' => $url,
                     'alt_text' => $data['name'],
-                    'is_primary' => $i === 1,
-                    'sort_order' => $i,
+                    'is_primary' => $i === 0,
+                    'sort_order' => $i + 1,
                     'mime_type' => 'image/jpeg',
                     'width' => 800,
                     'height' => 600,

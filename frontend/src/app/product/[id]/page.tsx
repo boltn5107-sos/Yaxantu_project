@@ -29,7 +29,7 @@ import {
 } from "@/lib/api";
 import { useApi } from "@/lib/useApi";
 import { useAuth } from "@/lib/auth";
-import { formatPrice } from "@/lib/utils";
+import { formatPrice, fallbackImage } from "@/lib/utils";
 
 type Tab = "description" | "specifications" | "reviews";
 
@@ -195,7 +195,7 @@ export default function ProductPage({
   const images =
     product.images.length > 0
       ? product.images.map((img) => img.path)
-      : ["/api/placeholder/600/400"];
+      : [fallbackImage(600, 400, product.id)];
 
   return (
     <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10">

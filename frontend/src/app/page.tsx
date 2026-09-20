@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { getCategories, getProducts, type Category, type Product } from "@/lib/api";
 import { useApi } from "@/lib/useApi";
+import { fallbackImage } from "@/lib/utils";
 import CategoryCard from "@/components/CategoryCard";
 import ProductCard from "@/components/ProductCard";
 
@@ -85,7 +86,7 @@ function mockProduct(
     is_featured: false,
     is_active: true,
     requires_shipping: true,
-    thumbnail: "/api/placeholder/400/300",
+    thumbnail: fallbackImage(400, 300, id),
     images: [],
     seller: { id, shop_name: seller, slug, logo: null, verification_level: verified ? 2 : 0, verified },
     category: null,

@@ -3,6 +3,7 @@
 namespace App\Http\Resources;
 
 use App\Models\Category;
+use App\Support\Media;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -20,7 +21,7 @@ class CategoryResource extends JsonResource
             'name' => $translation->name ?? $this->translations->first()?->name ?? $this->slug,
             'description' => $translation->description ?? null,
             'icon' => $this->icon,
-            'image' => $this->image_path,
+            'image' => Media::url($this->image_path),
             'is_main' => $this->is_main,
             'products_count' => (int) ($this->products_count ?? 0),
             'children' => CategoryResource::collection($this->whenLoaded('children')),

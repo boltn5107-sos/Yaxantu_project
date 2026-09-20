@@ -3,6 +3,7 @@
 namespace App\Http\Resources;
 
 use App\Models\Product;
+use App\Support\Media;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -32,11 +33,11 @@ class ProductResource extends JsonResource
             'is_featured' => (bool) $this->is_featured,
             'is_active' => (bool) $this->is_active,
             'requires_shipping' => (bool) $this->requires_shipping,
-            'thumbnail' => $primary?->path,
+            'thumbnail' => Media::url($primary?->path),
             'images' => $images
                 ? $this->images->map(fn ($image) => [
                     'id' => $image->id,
-                    'path' => $image->path,
+                    'path' => Media::url($image->path),
                     'alt_text' => $image->alt_text,
                     'is_primary' => (bool) $image->is_primary,
                 ])->values()
@@ -45,7 +46,7 @@ class ProductResource extends JsonResource
                 'id' => $this->seller->id,
                 'shop_name' => $this->seller->shop_name,
                 'slug' => $this->seller->slug,
-                'logo' => $this->seller->logo_path,
+                'logo' => Media::url($this->seller->logo_path),
                 'verification_level' => (int) $this->seller->verification_level,
                 'verified' => $this->seller->verified_at !== null,
             ]),
