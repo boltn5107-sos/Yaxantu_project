@@ -1,0 +1,898 @@
+CAHIER DES CHARGES
+PLATEFORME MARKETPLACE YAXANTU
+Version 1.0
+
+1. IDENTITÉ DU PROJET
+
+Nom : Yaxantu
+
+Type : Marketplace multi-vendeurs
+
+Première version : Progressive Web App (PWA)
+
+Stack principale :
+
+* Frontend : Next.js + TypeScript
+* Backend : Laravel
+* Base de données : PostgreSQL
+* Cache et files d'attente : Redis
+* Stockage médias : stockage objet compatible S3
+* Déploiement : Docker + CI/CD
+
+Objectif général :
+
+Créer une marketplace moderne permettant à toute personne d'acheter ou de vendre facilement, y compris les commerçants ayant une faible maîtrise du numérique ou de la lecture.
+
+Yaxantu doit être simple sans être simpliste, moderne sans être générique et accessible sans donner l'impression d'être une application destinée uniquement aux utilisateurs débutants.
+
+2. VISION
+
+Yaxantu doit réduire la complexité du commerce en ligne.
+
+L'utilisateur doit pouvoir :
+
+* rechercher un produit par texte, voix ou image ;
+* comprendre rapidement une fiche produit ;
+* écouter les informations importantes ;
+* acheter avec un parcours court ;
+* suivre sa commande ;
+* vendre un produit avec très peu de saisie ;
+* communiquer avec les acheteurs ;
+* recevoir et gérer ses paiements ;
+* développer progressivement son activité.
+
+L'intelligence artificielle sera prévue dès la conception, mais le fonctionnement essentiel de Yaxantu ne doit jamais dépendre de l'IA.
+
+Si un service IA est indisponible, les fonctions commerciales principales doivent continuer à fonctionner.
+
+3. POSITIONNEMENT UX
+
+Yaxantu doit combiner :
+
+* simplicité d'utilisation inspirée des applications grand public ;
+* rapidité des services financiers numériques ;
+* puissance fonctionnelle d'une grande marketplace ;
+* accessibilité pour les utilisateurs ayant une faible littératie numérique ;
+* architecture technique capable de supporter une croissance importante.
+
+Yaxantu ne doit pas copier WhatsApp, Wave, Shopify, Alibaba, Amazon ou une autre plateforme.
+
+Les bonnes pratiques peuvent être reprises, mais l'expérience utilisateur doit être conçue spécifiquement pour Yaxantu.
+
+4. PRINCIPES DE DESIGN
+
+Le design doit être :
+
+* professionnel ;
+* moderne ;
+* sobre ;
+* original ;
+* lisible ;
+* rapide ;
+* cohérent ;
+* mobile-first.
+
+Éviter :
+
+* les interfaces génériques ;
+* les gradients excessifs ;
+* les animations inutiles ;
+* les énormes boutons ;
+* les interfaces surchargées ;
+* les emojis décoratifs ;
+* les composants visuellement incohérents.
+
+Les boutons doivent avoir une taille standard confortable.
+
+Chaque composant doit appartenir à un design system cohérent.
+
+5. ACCESSIBILITÉ
+
+Yaxantu doit pouvoir être utilisé par :
+
+* utilisateurs expérimentés ;
+* utilisateurs débutants ;
+* personnes lisant peu ;
+* personnes ayant des difficultés avec les formulaires ;
+* utilisateurs disposant d'un smartphone d'entrée de gamme.
+
+L'interface ne doit cependant pas supposer qu'un utilisateur analphabète est incapable d'utiliser une interface moderne.
+
+L'objectif est de proposer plusieurs modes d'interaction :
+
+* visuel ;
+* tactile ;
+* vocal ;
+* photographique ;
+* textuel.
+
+6. RÈGLE DE CODAGE VISUEL
+
+Pour les actions importantes, utiliser une combinaison :
+
+COULEUR + FORME + ICÔNE + POSITION + VOIX SI NÉCESSAIRE
+
+La couleur ne doit jamais être le seul moyen de transmettre une information.
+
+Exemples :
+
+ACHETER
+
+* couleur dédiée ;
+* icône panier ;
+* emplacement constant ;
+* libellé court ;
+* confirmation visuelle.
+
+RETOUR
+
+* icône flèche ;
+* emplacement constant ;
+* couleur secondaire.
+
+SUCCÈS
+
+* couleur de succès ;
+* symbole de confirmation ;
+* message clair.
+
+ERREUR
+
+* couleur d'erreur ;
+* symbole explicite ;
+* explication courte.
+
+7. PALETTE
+
+Fond principal :
+
+* blanc ou gris très clair.
+
+Couleur principale :
+
+* bleu ou vert foncé.
+
+Couleur d'accent :
+
+* orange ou jaune vif réservé aux actions importantes.
+
+Couleurs fonctionnelles :
+
+* vert : succès ;
+* rouge : erreur ;
+* jaune : attention.
+
+La palette doit rester limitée et cohérente.
+
+8. PAGE D'ACCUEIL
+
+La page d'accueil doit présenter immédiatement :
+
+* recherche ;
+* recherche vocale ;
+* recherche par image ;
+* catégories principales ;
+* produits populaires ;
+* produits proches ;
+* vendeurs vérifiés ;
+* offres ;
+* recommandations.
+
+La recherche doit être l'élément central de l'expérience.
+
+9. CATÉGORIES
+
+L'interface principale ne doit pas afficher une multitude de catégories.
+
+Prévoir 3 à 4 catégories principales visibles directement.
+
+Chaque catégorie doit être représentée par :
+
+* image ;
+* icône ;
+* nom court.
+
+Les catégories détaillées restent accessibles après sélection.
+
+10. FICHE PRODUIT
+
+Une fiche produit doit contenir :
+
+* photo HD ;
+* galerie d'images ;
+* prix en chiffres ;
+* disponibilité ;
+* quantité ;
+* vendeur ;
+* statut de vérification ;
+* localisation lorsque pertinente ;
+* informations principales ;
+* description ;
+* avis ;
+* avis audio ;
+* informations de livraison ;
+* bouton d'achat ;
+* ajout au panier ;
+* favoris.
+
+La description doit pouvoir être lue à voix haute.
+
+11. RECHERCHE
+
+Trois modes principaux :
+
+A. Recherche texte
+
+Pour les utilisateurs qui préfèrent saisir une requête.
+
+B. Recherche vocale
+
+L'utilisateur parle naturellement.
+
+Exemple :
+
+"Je cherche un téléphone Samsung à moins de 150 000 francs."
+
+Le système transforme la demande en critères de recherche.
+
+C. Recherche par image
+
+L'utilisateur photographie un produit.
+
+Le système peut identifier :
+
+* type de produit ;
+* catégorie ;
+* caractéristiques visibles ;
+* produits similaires.
+
+12. FILTRES
+
+Les filtres doivent privilégier la sélection visuelle.
+
+Exemples :
+
+* couleurs ;
+* tailles ;
+* prix ;
+* distance ;
+* disponibilité ;
+* état du produit ;
+* vendeur vérifié.
+
+Les sélections doivent être représentées clairement.
+
+Éviter les interfaces composées de longues listes déroulantes.
+
+13. PANIER
+
+Le panier doit permettre :
+
+* ajout ;
+* suppression ;
+* modification de quantité ;
+* calcul du sous-total ;
+* frais de livraison ;
+* total ;
+* vérification du stock.
+
+Les prix doivent toujours être affichés clairement en chiffres.
+
+14. PARCOURS D'ACHAT
+
+Objectif :
+
+1. Produit
+2. Livraison
+3. Paiement
+4. Confirmation
+
+Le parcours doit rester court.
+
+Lorsque cela est possible :
+
+* sélection tactile ;
+* adresse enregistrée ;
+* localisation ;
+* reconnaissance vocale ;
+* informations préremplies ;
+* confirmation vocale.
+
+Les actions financières sensibles doivent toujours recevoir une confirmation claire.
+
+15. PAIEMENT
+
+L'architecture doit permettre plusieurs moyens de paiement.
+
+Le système doit prévoir une abstraction des fournisseurs de paiement.
+
+Fonctions :
+
+* paiement ;
+* confirmation ;
+* webhook ;
+* remboursement ;
+* paiement échoué ;
+* rapprochement ;
+* historique ;
+* idempotence.
+
+Une transaction ne doit jamais être considérée comme payée uniquement à partir d'une réponse envoyée par le navigateur.
+
+16. COMPTE ACHETEUR
+
+Fonctions :
+
+* inscription ;
+* connexion ;
+* profil ;
+* adresses ;
+* commandes ;
+* favoris ;
+* moyens de paiement ;
+* notifications ;
+* préférences ;
+* historique.
+
+17. COMPTE VENDEUR
+
+Fonctions :
+
+* profil vendeur ;
+* vérification ;
+* produits ;
+* stock ;
+* commandes ;
+* revenus ;
+* paiements ;
+* retraits ;
+* statistiques ;
+* avis ;
+* paramètres.
+
+18. AJOUT D'UN PRODUIT
+
+Le parcours vendeur doit être particulièrement simple.
+
+Étapes :
+
+1. Ajouter une photo
+2. Indiquer le produit
+3. Indiquer le prix
+4. Indiquer la quantité
+5. Publier
+
+L'utilisateur peut utiliser la voix.
+
+Exemple :
+
+"J'ai 20 sacs à 8 000 francs."
+
+L'IA pourra ensuite extraire automatiquement :
+
+Produit : sac
+Quantité : 20
+Prix : 8 000 FCFA
+
+19. ESPACE VENDEUR
+
+Dashboard :
+
+* ventes ;
+* commandes ;
+* produits ;
+* stock ;
+* revenus ;
+* retraits ;
+* avis ;
+* statistiques.
+
+Les informations importantes doivent être visibles sans parcourir plusieurs écrans.
+
+20. SYSTÈME DE CONFIANCE
+
+La confiance constitue un élément central de Yaxantu.
+
+Prévoir :
+
+* vendeur vérifié ;
+* historique des transactions ;
+* avis ;
+* avis audio ;
+* signalement ;
+* litiges ;
+* modération ;
+* historique des actions importantes.
+
+Le badge de vérification doit indiquer clairement ce qui a été vérifié.
+
+21. AVIS AUDIO
+
+Les clients peuvent :
+
+* écrire un avis ;
+* enregistrer un avis vocal ;
+* écouter les avis.
+
+Prévoir :
+
+* durée maximale ;
+* modération ;
+* signalement ;
+* suppression en cas de violation des règles.
+
+22. COMMANDES
+
+Statuts :
+
+* créée ;
+* paiement en attente ;
+* payée ;
+* préparation ;
+* expédiée ;
+* en livraison ;
+* livrée ;
+* annulée ;
+* retournée ;
+* remboursée.
+
+Chaque changement important doit être enregistré.
+
+23. LIVRAISON
+
+Prévoir une architecture permettant :
+
+* livraison partenaire ;
+* livraison vendeur ;
+* retrait sur point ;
+* suivi ;
+* frais de livraison ;
+* preuve de livraison ;
+* notifications.
+
+La logistique doit rester découplée du cœur du système afin de permettre l'intégration de nouveaux partenaires.
+
+24. IA
+
+L'IA sera une couche indépendante.
+
+Fonctions prévues :
+
+* assistant d'achat ;
+* recherche intelligente ;
+* recherche vocale ;
+* recherche par image ;
+* génération de fiches produits ;
+* traduction ;
+* transcription ;
+* recommandations ;
+* aide au vendeur ;
+* détection d'annonces suspectes ;
+* analyse commerciale.
+
+Architecture :
+
+NEXT.JS
+|
+LARAVEL API
+|
+SERVICES MÉTIER
+|
++------------------------------+
+| Utilisateurs                 |
+| Produits                     |
+| Commandes                    |
+| Paiements                    |
+| Livraison                    |
+| Marketplace                  |
++------------------------------+
+|
+COUCHE IA OPTIONNELLE
+
+25. FONCTIONNEMENT SANS IA
+
+Les fonctions suivantes doivent fonctionner sans IA :
+
+* inscription ;
+* connexion ;
+* navigation ;
+* catalogue ;
+* recherche classique ;
+* panier ;
+* commande ;
+* paiement ;
+* gestion vendeur ;
+* gestion stock ;
+* administration.
+
+L'IA doit améliorer le produit, pas devenir un point unique de défaillance.
+
+26. VOIX
+
+Prévoir :
+
+* lecture des descriptions ;
+* lecture des prix ;
+* lecture des informations importantes ;
+* recherche vocale ;
+* saisie vocale ;
+* confirmations.
+
+La technologie vocale du navigateur peut être utilisée lorsqu'elle est disponible.
+
+Un mécanisme de remplacement doit être prévu lorsque la reconnaissance vocale n'est pas disponible.
+
+27. PWA
+
+La première version sera une PWA.
+
+Prévoir :
+
+* manifest ;
+* installation ;
+* service worker ;
+* cache ;
+* stratégie offline ;
+* notifications push ;
+* responsive design ;
+* optimisation réseau ;
+* reprise après perte de connexion.
+
+Les opérations sensibles doivent rester dépendantes du serveur.
+
+28. STACK TECHNIQUE
+
+FRONTEND
+
+Next.js
+TypeScript
+Design System
+PWA
+
+BACKEND
+
+Laravel
+API REST
+Laravel Queue
+Laravel Sanctum ou mécanisme d'authentification adapté
+
+BASE DE DONNÉES
+
+PostgreSQL
+
+CACHE
+
+Redis
+
+RECHERCHE
+
+OpenSearch ou Elasticsearch selon les besoins.
+
+STOCKAGE
+
+S3 ou stockage objet compatible S3.
+
+INFRASTRUCTURE
+
+Docker
+CI/CD
+HTTPS
+Monitoring
+Logs
+Backups
+
+29. ARCHITECTURE
+
+Le frontend Next.js et le backend Laravel doivent être séparés.
+
+Next.js :
+
+* interface ;
+* navigation ;
+* rendu ;
+* PWA ;
+* expérience utilisateur.
+
+Laravel :
+
+* logique métier ;
+* API ;
+* authentification ;
+* autorisations ;
+* commandes ;
+* paiements ;
+* marketplace ;
+* sécurité ;
+* administration.
+
+La logique critique ne doit jamais être placée uniquement dans le frontend.
+
+30. SÉCURITÉ
+
+La sécurité doit être intégrée dès la première version.
+
+Prévoir :
+
+* HTTPS ;
+* mots de passe correctement hachés ;
+* authentification sécurisée ;
+* rôles et permissions ;
+* validation serveur ;
+* protection contre injections SQL ;
+* protection XSS ;
+* protection CSRF lorsque pertinente ;
+* rate limiting ;
+* sessions sécurisées ;
+* cookies sécurisés ;
+* secrets hors du code ;
+* contrôle des fichiers uploadés ;
+* limites de taille ;
+* journalisation ;
+* audit ;
+* sauvegardes ;
+* principe du moindre privilège.
+
+Les paiements, retraits, remboursements et changements sensibles doivent être particulièrement protégés.
+
+31. RÔLES
+
+VISITEUR
+
+Accès au catalogue et recherche.
+
+ACHETEUR
+
+Achats et commandes.
+
+VENDEUR
+
+Gestion des produits et ventes.
+
+MODÉRATEUR
+
+Modération.
+
+ADMINISTRATEUR
+
+Administration globale.
+
+Des rôles supplémentaires pourront être ajoutés ultérieurement.
+
+32. ADMINISTRATION
+
+Le back-office doit permettre :
+
+* gestion utilisateurs ;
+* gestion vendeurs ;
+* vérifications ;
+* catégories ;
+* produits ;
+* commandes ;
+* paiements ;
+* remboursements ;
+* livraisons ;
+* litiges ;
+* avis ;
+* contenus ;
+* statistiques ;
+* logs.
+
+33. NOTIFICATIONS
+
+Prévoir :
+
+* notifications PWA ;
+* notifications internes ;
+* email ;
+* SMS lorsque nécessaire.
+
+Les notifications importantes doivent être accessibles depuis le compte utilisateur.
+
+34. PERFORMANCE
+
+Objectifs :
+
+* interface rapide ;
+* images optimisées ;
+* lazy loading ;
+* pagination ;
+* cache ;
+* requêtes optimisées ;
+* traitement asynchrone ;
+* CDN si nécessaire ;
+* limitation des traitements coûteux.
+
+La plateforme doit être utilisable sur des appareils modestes et des connexions mobiles variables.
+
+35. MULTILINGUISME
+
+L'architecture doit prévoir plusieurs langues.
+
+Le système doit pouvoir évoluer vers :
+
+* français ;
+* anglais ;
+* langues locales ;
+* autres langues.
+
+Les textes d'interface doivent être séparés du code.
+
+36. ANALYTIQUE
+
+Prévoir :
+
+* utilisateurs actifs ;
+* vendeurs actifs ;
+* produits ;
+* commandes ;
+* volume de transactions ;
+* panier moyen ;
+* conversion ;
+* abandon panier ;
+* remboursements ;
+* commissions ;
+* rétention ;
+* utilisation recherche vocale ;
+* utilisation recherche image.
+
+Les données personnelles doivent être traitées conformément aux réglementations applicables.
+
+37. MODÈLE ÉCONOMIQUE
+
+Le système doit permettre plusieurs sources de revenus.
+
+Possibilités :
+
+* commission sur transaction ;
+* frais de service ;
+* abonnement vendeur ;
+* services professionnels ;
+* mise en avant de produits ;
+* publicité ;
+* services logistiques ;
+* services B2B ;
+* services financiers via partenaires.
+
+Le modèle économique doit rester configurable afin de permettre des expérimentations.
+
+38. MODÈLE DE DONNÉES INITIAL
+
+Principales entités :
+
+User
+Seller
+BuyerProfile
+Verification
+Category
+Product
+ProductImage
+ProductVariant
+Inventory
+Cart
+CartItem
+Order
+OrderItem
+Payment
+Refund
+Delivery
+Address
+Review
+AudioReview
+Favorite
+Notification
+Dispute
+Commission
+SellerPayout
+AuditLog
+
+39. TESTS
+
+Prévoir :
+
+* tests unitaires ;
+* tests API ;
+* tests intégration ;
+* tests end-to-end ;
+* tests sécurité ;
+* tests charge ;
+* tests PWA ;
+* tests mobile ;
+* tests accessibilité.
+
+Parcours prioritaires :
+
+* inscription ;
+* connexion ;
+* publication produit ;
+* recherche ;
+* panier ;
+* commande ;
+* paiement ;
+* remboursement ;
+* retrait vendeur.
+
+40. ROADMAP
+
+PHASE 1
+Fondations :
+
+* architecture ;
+* design system ;
+* authentification ;
+* utilisateurs ;
+* vendeurs ;
+* catégories ;
+* produits ;
+* PWA ;
+* sécurité.
+
+PHASE 2
+Marketplace :
+
+* catalogue ;
+* recherche ;
+* panier ;
+* commandes ;
+* paiements ;
+* vendeurs ;
+* avis ;
+* notifications.
+
+PHASE 3
+Accessibilité :
+
+* synthèse vocale ;
+* recherche vocale ;
+* avis audio ;
+* recherche image ;
+* parcours simplifiés.
+
+PHASE 4
+IA :
+
+* assistant ;
+* recherche sémantique ;
+* génération produits ;
+* recommandations ;
+* outils vendeur.
+
+PHASE 5
+Scale :
+
+* optimisation ;
+* observabilité ;
+* recherche avancée ;
+* nouveaux partenaires ;
+* expansion géographique.
+
+41. CRITÈRES DE RÉUSSITE
+
+Yaxantu doit permettre :
+
+* à un utilisateur de comprendre rapidement comment acheter ;
+* à un commerçant de publier un produit simplement ;
+* aux fonctions principales de fonctionner sans IA ;
+* aux opérations financières d'être validées côté serveur ;
+* aux données sensibles d'être protégées ;
+* à la PWA de fonctionner correctement sur mobile ;
+* aux parcours principaux de rester courts ;
+* à l'interface d'être utilisable avec peu de lecture ;
+* à l'architecture d'évoluer sans réécriture complète.
+
+42. PRINCIPE DIRECTEUR
+
+Yaxantu ne doit pas être simplement un site de vente.
+
+Yaxantu doit devenir une infrastructure de commerce accessible.
+
+ACHETER simplement.
+
+VENDRE simplement.
+
+COMPRENDRE rapidement.
+
+FAIRE CONFIANCE.
+
+ÉVOLUER sans reconstruire la plateforme.
+
+FIN DU CAHIER DES CHARGES
