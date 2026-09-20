@@ -82,6 +82,11 @@ export default function Header() {
                   Livraisons
                 </Link>
               )}
+              {(user?.roles?.includes?.("admin") || user?.roles?.includes?.("moderator")) && (
+                <Link href="/admin" className="rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors">
+                  Administration
+                </Link>
+              )}
               <Link href="/seller" className="rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors">
                 Vendre
               </Link>

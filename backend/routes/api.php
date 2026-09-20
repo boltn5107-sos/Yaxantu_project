@@ -327,9 +327,16 @@ Route::prefix('v1')->group(function () {
                 ->name('api.v1.delivery.jobs.deliver');
         });
 
-        // ── Administration : validation des livreurs (phase 3) ───────────
+        // ── Administration : console de pilotage de la place ──────────────
+        // Lecture pour admin + modérateur (admin.access), écritures sensibles
+        // réservées aux rôles disposant de la permission dédiée (admin : '*').
 
-        Route::prefix('admin')->middleware('can:couriers.verify')->group(function () {
+        Route::prefix('admin')->middleware('can:admin.access')->group(function () {
+
+            Route::get('/dashboard', [App\Http\Controllers\Api\V1\Admin\AdminDashboardController::class, 'index'])
+                ->name('api.v1.admin.dashboard');
+
+            // Validation des livreurs (modérateur et admin).
             Route::get('/couriers/pending', [App\Http\Controllers\Api\V1\Admin\CourierApprovalController::class, 'pending'])
                 ->name('api.v1.admin.couriers.pending');
 
@@ -338,6 +345,89 @@ Route::prefix('v1')->group(function () {
 
             Route::post('/couriers/{courier}/reject', [App\Http\Controllers\Api\V1\Admin\CourierApprovalController::class, 'reject'])
                 ->name('api.v1.admin.couriers.reject');
+
+            Route::get('/couriers', [App\Http\Controllers\Api\V1\Admin\AdminCourierController::class, 'index'])
+                ->name('api.v1.admin.couriers.index');
+
+            // Boutiques : vérification + pilotage (modérateur et admin).
+            Route::get('/sellers', [App\Http\Controllers\Api\V1\Admin\AdminSellerController::class, 'index'])
+                ->name('api.v1.admin.sellers.index');
+
+            Route::post('/sellers/{seller}/verify', [App\Http\Controllers\Api\V1\Admin\AdminSellerController::class, 'verify'])
+                ->name('api.v1.admin.sellers.verify');
+
+            Route::post('/sellers/{seller}/reject', [App\Http\Controllers\Api\V1\Admin\AdminSellerController::class, 'reject'])
+                ->name('api.v1.admin.sellers.reject');
+
+            Route::patch('/sellers/{seller}', [App\Http\Controllers\Api\V1\Admin\AdminSellerController::class, 'update'])
+                ->name('api.v1.admin.sellers.update');
+
+            // Commandes : suivi global.
+            Route::get('/orders', [App\Http\Controllers\Api\V1\Admin\AdminOrderController::class, 'index'])
+                ->name('api.v1.admin.orders.index');
+
+            Route::get('/orders/{orderNumber}', [App\Http\Controllers\Api\V1\Admin\AdminOrderController::class, 'show'])
+                ->name('api.v1.admin.orders.show');
+
+            Route::patch('/orders/{order}', [App\Http\Controllers\Api\V1\Admin\AdminOrderController::class, 'updateStatus'])
+                ->name('api.v1.admin.orders.status');
+
+            Route::post('/orders/{order}/cancel', [App\Http\Controllers\Api\V1\Admin\AdminOrderController::class, 'cancel'])
+                ->name('api.v1.admin.orders.cancel');
+
+            // Produits : modération du catalogue.
+            Route::get('/products', [App\Http\Controllers\Api\V1\Admin\AdminProductController::class, 'index'])
+                ->name('api.v1.admin.products.index');
+
+            Route::patch('/products/{product}', [App\Http\Controllers\Api\V1\Admin\AdminProductController::class, 'update'])
+                ->middleware('can:products.moderate')
+                ->name('api.v1.admin.products.update');
+
+            // Utilisateurs : gestion des comptes et des rôles.
+            Route::get('/users', [App\Http\Controllers\Api\V1\Admin\AdminUserController::class, 'index'])
+                ->name('api.v1.admin.users.index');
+
+            Route::patch('/users/{user}', [App\Http\Controllers\Api\V1\Admin\AdminUserController::class, 'update'])
+                ->middleware('can:users.manage')
+                ->name('api.v1.admin.users.update');
+
+            Route::patch('/users/{user}/role', [App\Http\Controllers\Api\V1\Admin\AdminUserController::class, 'updateRole'])
+                ->middleware('can:users.manage')
+                ->name('api.v1.admin.users.role');
+
+            // Marketing : bannières + codes promo + parrainages.
+            Route::get('/banners', [App\Http\Controllers\Api\V1\Admin\AdminBannerController::class, 'index'])
+                ->name('api.v1.admin.banners.index');
+
+            Route::post('/banners', [App\Http\Controllers\Api\V1\Admin\AdminBannerController::class, 'store'])
+                ->middleware('can:banners.manage')
+                ->name('api.v1.admin.banners.store');
+
+            Route::put('/banners/{banner}', [App\Http\Controllers\Api\V1\Admin\AdminBannerController::class, 'update'])
+                ->middleware('can:banners.manage')
+                ->name('api.v1.admin.banners.update');
+
+            Route::delete('/banners/{banner}', [App\Http\Controllers\Api\V1\Admin\AdminBannerController::class, 'destroy'])
+                ->middleware('can:banners.manage')
+                ->name('api.v1.admin.banners.destroy');
+
+            Route::get('/promo-codes', [App\Http\Controllers\Api\V1\Admin\AdminPromoCodeController::class, 'index'])
+                ->name('api.v1.admin.promo-codes.index');
+
+            Route::post('/promo-codes', [App\Http\Controllers\Api\V1\Admin\AdminPromoCodeController::class, 'store'])
+                ->middleware('can:promocodes.manage')
+                ->name('api.v1.admin.promo-codes.store');
+
+            Route::put('/promo-codes/{promoCode}', [App\Http\Controllers\Api\V1\Admin\AdminPromoCodeController::class, 'update'])
+                ->middleware('can:promocodes.manage')
+                ->name('api.v1.admin.promo-codes.update');
+
+            Route::delete('/promo-codes/{promoCode}', [App\Http\Controllers\Api\V1\Admin\AdminPromoCodeController::class, 'destroy'])
+                ->middleware('can:promocodes.manage')
+                ->name('api.v1.admin.promo-codes.destroy');
+
+            Route::get('/referrals', [App\Http\Controllers\Api\V1\Admin\AdminReferralController::class, 'index'])
+                ->name('api.v1.admin.referrals.index');
         });
 
     });

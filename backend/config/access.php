@@ -60,7 +60,9 @@ return [
         'moderator' => [
             'label' => 'Modérateur',
             'permissions' => [
+                'admin.access',
                 'moderation.products',
+                'products.moderate',
                 'moderation.reviews',
                 'moderation.disputes',
                 'reports.manage',
@@ -107,6 +109,13 @@ return [
         'moderation.reviews' => 'Modérer les avis',
         'moderation.disputes' => 'Gérer les litiges',
         'reports.manage' => 'Gérer les signalements',
+        'admin.access' => 'Accéder à l\'administration',
+        'users.manage' => 'Gérer les utilisateurs',
+        'orders.manage_all' => 'Gérer toutes les commandes',
+        'products.moderate' => 'Modérer tous les produits',
+        'promocodes.manage' => 'Gérer les codes promo',
+        'banners.manage' => 'Gérer les bannières',
+        'finances.view' => 'Consulter les finances locales',
     ],
 
 ];

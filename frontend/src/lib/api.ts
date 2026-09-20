@@ -753,6 +753,9 @@ export async function chooseProfile(
  */
 export function landingPathFor(user: User | null): string {
   if (!user) return "/";
+  if (user.roles.includes("admin") || user.roles.includes("moderator")) {
+    return "/admin";
+  }
   if (
     user.profile_type === "seller" &&
     user.seller &&
@@ -1366,4 +1369,439 @@ export async function biometricUnlock(input: {
     { method: "POST", body: JSON.stringify(input) },
   );
   return envelope.data;
+}
+
+// ── Administration : console de pilotage -----------------------------------
+
+export type PaginatedMeta = {
+  current_page: number;
+  last_page: number;
+  per_page: number;
+  total: number;
+};
+
+export type AdminStats = {
+  users: { total: number; active: number; suspended: number; banned: number };
+  orders: {
+    total: number;
+    active: number;
+    delivered: number;
+    cancelled: number;
+    revenue: number;
+    revenue_today: number;
+  };
+  sellers: { total: number; pending: number; active: number };
+  couriers: { total: number; pending: number; approved: number };
+  products: { total: number; active: number; featured: number };
+  marketing: {
+    promo_codes: number;
+    active_promo_codes: number;
+    referrals: number;
+    rewarded_referrals: number;
+  };
+  top_products: { id: number; name: string; sold: number }[];
+  recent_orders: {
+    id: number;
+    order_number: string;
+    status: string;
+    total: number;
+    customer: string | null;
+    shop: string | null;
+    placed_at: string | null;
+  }[];
+};
+
+export type AdminUser = {
+  id: number;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  status: string;
+  roles: string[];
+  seller: { shop_name: string; status: string } | null;
+  courier: { status: string } | null;
+  created_at: string | null;
+};
+
+export type AdminOrder = {
+  id: number;
+  order_number: string;
+  status: string;
+  status_label: string;
+  payment_status: string;
+  shipping_status: string;
+  subtotal: number;
+  shipping: number;
+  discount: number;
+  total: number;
+  currency: string;
+  items_count: number;
+  customer: string | null;
+  shop: string | null;
+  placed_at: string | null;
+};
+
+export type AdminProduct = {
+  id: number;
+  slug: string;
+  name: string;
+  price: number;
+  currency: string;
+  stock_quantity: number;
+  is_active: boolean;
+  is_featured: boolean;
+  status: string | null;
+  visibility: string | null;
+  rating_average: number;
+  sold_count: number;
+  sold_quantity: number;
+  seller: { id: number; shop_name: string } | null;
+  category: { id: number; name: string } | null;
+  created_at: string | null;
+};
+
+export type AdminSeller = {
+  id: number;
+  shop_name: string;
+  slug: string;
+  status: string;
+  verification_level: number;
+  verified_at: string | null;
+  trust_score: number;
+  products_count: number;
+  orders_count: number;
+  owner: { name: string; email: string | null; phone: string | null } | null;
+  created_at: string | null;
+};
+
+export type AdminCourier = {
+  id: number;
+  status: string;
+  approved_at: string | null;
+  reject_reason: string | null;
+  transport_type: string | null;
+  zone_address: string | null;
+  available: boolean;
+  deliveries_count: number;
+  owner: { name: string; email: string | null; phone: string | null } | null;
+  created_at: string | null;
+};
+
+export type AdminBanner = {
+  id: number;
+  title: string;
+  subtitle: string | null;
+  image: string | null;
+  link: string | null;
+  sort_order: number;
+  is_active: boolean;
+  created_at: string | null;
+};
+
+export type AdminPromoCode = {
+  id: number;
+  code: string;
+  description: string | null;
+  discount_type: "percent" | "fixed";
+  discount_value: number;
+  is_fixed: boolean;
+  min_order_minor: number | null;
+  max_uses: number | null;
+  used_count: number;
+  orders_count: number;
+  one_time: boolean;
+  is_active: boolean;
+  starts_at: string | null;
+  expires_at: string | null;
+  created_at: string | null;
+};
+
+export type AdminReferral = {
+  id: number;
+  status: string;
+  referrer: { name: string; email: string | null; code: string | null } | null;
+  referred_user: { name: string; email: string | null } | null;
+  reward_code: string | null;
+  created_at: string | null;
+};
+
+function adminParam(flags: string[]): boolean {
+  return flags.includes("admin") || flags.includes("moderator");
+}
+
+export async function getAdminStats(): Promise<AdminStats> {
+  const envelope = await apiFetch<ApiEnvelope<AdminStats>>("/v1/admin/dashboard");
+  return envelope.data;
+}
+
+export async function getAdminOrders(params?: {
+  status?: string;
+  payment_status?: string;
+  search?: string;
+  page?: number;
+}): Promise<{ data: AdminOrder[]; meta: PaginatedMeta }> {
+  return apiFetch(`/v1/admin/orders${toQueryString(params ?? {})}`);
+}
+
+export async function getAdminOrder(
+  orderNumber: string,
+): Promise<Order & {
+  customer?: string | null;
+  customer_email?: string | null;
+  customer_phone?: string | null;
+  shop?: string | null;
+}> {
+  const envelope = await apiFetch<ApiEnvelope<Order>>(`/v1/admin/orders/${orderNumber}`);
+  return envelope.data;
+}
+
+export async function updateAdminOrderStatus(
+  orderId: number,
+  status: string,
+  reason?: string,
+): Promise<string> {
+  const envelope = await apiFetch<ApiEnvelope<{ message: string }>>(
+    `/v1/admin/orders/${orderId}`,
+    { method: "PATCH", body: JSON.stringify({ status, reason }) },
+  );
+  return envelope.message ?? "Statut mis à jour.";
+}
+
+export async function cancelAdminOrder(
+  orderId: number,
+  reason: string,
+): Promise<string> {
+  const envelope = await apiFetch<ApiEnvelope<{ message: string }>>(
+    `/v1/admin/orders/${orderId}/cancel`,
+    { method: "POST", body: JSON.stringify({ reason }) },
+  );
+  return envelope.message ?? "Commande annulée.";
+}
+
+export async function getAdminProducts(params?: {
+  search?: string;
+  visibility?: string;
+  page?: number;
+}): Promise<{ data: AdminProduct[]; meta: PaginatedMeta }> {
+  return apiFetch(`/v1/admin/products${toQueryString(params ?? {})}`);
+}
+
+export async function updateAdminProduct(
+  productId: number,
+  input: { is_active?: boolean; is_featured?: boolean; stock_quantity?: number },
+): Promise<string> {
+  const envelope = await apiFetch<ApiEnvelope<{ message: string }>>(
+    `/v1/admin/products/${productId}`,
+    { method: "PATCH", body: JSON.stringify(input) },
+  );
+  return envelope.message ?? "Produit mis à jour.";
+}
+
+export async function getAdminUsers(params?: {
+  role?: string;
+  status?: string;
+  search?: string;
+  page?: number;
+}): Promise<{ data: AdminUser[]; meta: PaginatedMeta }> {
+  return apiFetch(`/v1/admin/users${toQueryString(params ?? {})}`);
+}
+
+export async function updateAdminUser(
+  userId: number,
+  status: string,
+): Promise<string> {
+  const envelope = await apiFetch<ApiEnvelope<{ message: string }>>(
+    `/v1/admin/users/${userId}`,
+    { method: "PATCH", body: JSON.stringify({ status }) },
+  );
+  return envelope.message ?? "Statut mis à jour.";
+}
+
+export async function updateAdminUserRole(
+  userId: number,
+  role: string,
+  action: "assign" | "remove",
+): Promise<string> {
+  const envelope = await apiFetch<ApiEnvelope<{ message: string }>>(
+    `/v1/admin/users/${userId}/role`,
+    { method: "PATCH", body: JSON.stringify({ role, action }) },
+  );
+  return envelope.message ?? "Rôle mis à jour.";
+}
+
+export async function getAdminSellers(params?: {
+  status?: string;
+  search?: string;
+  page?: number;
+}): Promise<{ data: AdminSeller[]; meta: PaginatedMeta }> {
+  return apiFetch(`/v1/admin/sellers${toQueryString(params ?? {})}`);
+}
+
+export async function verifyAdminSeller(sellerId: number): Promise<string> {
+  const envelope = await apiFetch<ApiEnvelope<{ message: string }>>(
+    `/v1/admin/sellers/${sellerId}/verify`,
+    { method: "POST" },
+  );
+  return envelope.message ?? "Boutique vérifiée.";
+}
+
+export async function rejectAdminSeller(
+  sellerId: number,
+  reason: string,
+): Promise<string> {
+  const envelope = await apiFetch<ApiEnvelope<{ message: string }>>(
+    `/v1/admin/sellers/${sellerId}/reject`,
+    { method: "POST", body: JSON.stringify({ reason }) },
+  );
+  return envelope.message ?? "Vérification refusée.";
+}
+
+export async function getAdminCouriers(params?: {
+  status?: string;
+  page?: number;
+}): Promise<{ data: AdminCourier[]; meta: PaginatedMeta }> {
+  return apiFetch(`/v1/admin/couriers${toQueryString(params ?? {})}`);
+}
+
+export async function getAdminCouriersPending(): Promise<
+  { id: number; name: string | null; phone: string | null }[]
+> {
+  const envelope = await apiFetch<
+    ApiEnvelope<{ id: number; name: string | null; phone: string | null }[]>
+  >("/v1/admin/couriers/pending");
+  return envelope.data;
+}
+
+export async function approveAdminCourier(courierId: number): Promise<string> {
+  const envelope = await apiFetch<ApiEnvelope<{ message: string }>>(
+    `/v1/admin/couriers/${courierId}/approve`,
+    { method: "POST" },
+  );
+  return envelope.message ?? "Livreur validé.";
+}
+
+export async function rejectAdminCourier(
+  courierId: number,
+  reason: string,
+): Promise<string> {
+  const envelope = await apiFetch<ApiEnvelope<{ message: string }>>(
+    `/v1/admin/couriers/${courierId}/reject`,
+    { method: "POST", body: JSON.stringify({ reason }) },
+  );
+  return envelope.message ?? "Demande refusée.";
+}
+
+export async function getAdminBanners(): Promise<AdminBanner[]> {
+  const envelope = await apiFetch<ApiEnvelope<AdminBanner[]>>("/v1/admin/banners");
+  return envelope.data;
+}
+
+export async function createAdminBanner(input: {
+  title: string;
+  subtitle?: string;
+  image_url: string;
+  link?: string;
+  sort_order?: number;
+  is_active?: boolean;
+}): Promise<string> {
+  const envelope = await apiFetch<ApiEnvelope<{ message: string }>>(
+    "/v1/admin/banners",
+    { method: "POST", body: JSON.stringify(input) },
+  );
+  return envelope.message ?? "Bannière créée.";
+}
+
+export async function updateAdminBanner(
+  bannerId: number,
+  input: {
+    title: string;
+    subtitle?: string;
+    image_url: string;
+    link?: string;
+    sort_order?: number;
+    is_active?: boolean;
+  },
+): Promise<string> {
+  const envelope = await apiFetch<ApiEnvelope<{ message: string }>>(
+    `/v1/admin/banners/${bannerId}`,
+    { method: "PUT", body: JSON.stringify(input) },
+  );
+  return envelope.message ?? "Bannière mise à jour.";
+}
+
+export async function deleteAdminBanner(bannerId: number): Promise<string> {
+  const envelope = await apiFetch<ApiEnvelope<{ message: string }>>(
+    `/v1/admin/banners/${bannerId}`,
+    { method: "DELETE" },
+  );
+  return envelope.message ?? "Bannière supprimée.";
+}
+
+export async function getAdminPromoCodes(): Promise<AdminPromoCode[]> {
+  const envelope = await apiFetch<ApiEnvelope<AdminPromoCode[]>>("/v1/admin/promo-codes");
+  return envelope.data;
+}
+
+export async function createAdminPromoCode(input: {
+  code: string;
+  description?: string;
+  discount_type: "percent" | "fixed";
+  discount_value: number;
+  min_order_minor?: number;
+  max_uses?: number;
+  one_time?: boolean;
+  is_active?: boolean;
+  starts_at?: string;
+  expires_at?: string;
+}): Promise<string> {
+  const envelope = await apiFetch<ApiEnvelope<{ message: string }>>(
+    "/v1/admin/promo-codes",
+    { method: "POST", body: JSON.stringify(input) },
+  );
+  return envelope.message ?? "Code promo créé.";
+}
+
+export async function updateAdminPromoCode(
+  promoCodeId: number,
+  input: {
+    code: string;
+    description?: string;
+    discount_type: "percent" | "fixed";
+    discount_value: number;
+    min_order_minor?: number;
+    max_uses?: number;
+    one_time?: boolean;
+    is_active?: boolean;
+    starts_at?: string;
+    expires_at?: string;
+  },
+): Promise<string> {
+  const envelope = await apiFetch<ApiEnvelope<{ message: string }>>(
+    `/v1/admin/promo-codes/${promoCodeId}`,
+    { method: "PUT", body: JSON.stringify(input) },
+  );
+  return envelope.message ?? "Code promo mis à jour.";
+}
+
+export async function deleteAdminPromoCode(promoCodeId: number): Promise<string> {
+  const envelope = await apiFetch<ApiEnvelope<{ message: string }>>(
+    `/v1/admin/promo-codes/${promoCodeId}`,
+    { method: "DELETE" },
+  );
+  return envelope.message ?? "Code promo supprimé.";
+}
+
+export async function getAdminReferrals(params?: {
+  status?: string;
+  page?: number;
+}): Promise<{ data: AdminReferral[]; meta: PaginatedMeta }> {
+  return apiFetch(`/v1/admin/referrals${toQueryString(params ?? {})}`);
+}
+
+export function isAdminRole(roles: string[]): boolean {
+  return roles.includes("admin");
+}
+
+export function isAdminStaff(roles: string[]): boolean {
+  return adminParam(roles);
 }
