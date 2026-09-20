@@ -51,7 +51,7 @@ class ShopController extends Controller
                     'logo' => $this->assetUrl($seller->logo_path),
                     'category' => $seller->mainCategory ? [
                         'id' => $seller->mainCategory->id,
-                        'name' => $seller->mainCategory->name,
+                        'name' => $seller->mainCategory->translatedName(),
                         'slug' => $seller->mainCategory->slug,
                     ] : null,
                     'location' => $seller->location_address,

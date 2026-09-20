@@ -25,7 +25,7 @@ class SellerProductController extends Controller
         $seller = $this->seller($request, requireOnboarded: false);
 
         $products = $seller->products()
-            ->with(['images', 'category'])
+            ->with(['images', 'category.translations'])
             ->orderByDesc('created_at')
             ->paginate(30);
 
@@ -198,7 +198,7 @@ class SellerProductController extends Controller
             'category' => $categoryLoaded ? [
                 'id' => $product->category->id,
                 'slug' => $product->category->slug,
-                'name' => $product->category->name,
+                'name' => $product->category->translatedName(),
             ] : null,
             'created_at' => $product->created_at?->toIso8601String(),
         ];

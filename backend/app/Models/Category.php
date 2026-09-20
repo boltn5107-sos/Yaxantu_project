@@ -41,6 +41,14 @@ class Category extends Model
         return $this->hasMany(CategoryTranslation::class);
     }
 
+    public function translatedName(string $locale = 'fr'): string
+    {
+        $translation = $this->translations->firstWhere('locale', $locale)
+            ?? $this->translations->first();
+
+        return $translation?->name ?: $this->slug;
+    }
+
     public function products(): HasMany
     {
         return $this->hasMany(Product::class);

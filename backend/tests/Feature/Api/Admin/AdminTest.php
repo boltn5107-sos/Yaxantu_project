@@ -4,6 +4,8 @@ namespace Tests\Feature\Api\Admin;
 
 use App\Enums\Role;
 use App\Models\Banner;
+use App\Models\Category;
+use App\Models\Product;
 use App\Models\PromoCode;
 use App\Models\Seller;
 use App\Models\User;
@@ -220,5 +222,26 @@ class AdminTest extends TestCase
             'status' => 'active',
             'verification_level' => 2,
         ]);
+    }
+
+    public function test_admin_product_listing_uses_translated_category_name(): void
+    {
+        $category = Category::create(['slug' => 'regression-cat', 'is_active' => true]);
+        $category->translations()->create(['locale' => 'fr', 'name' => 'Électronique']);
+
+        $sellerUser = User::factory()->create();
+        $sellerUser->assignRole(Role::Seller);
+        $seller = Seller::factory()->create(['user_id' => $sellerUser->id, 'status' => 'active']);
+
+        Product::factory()->create([
+            'seller_id' => $seller->id,
+            'category_id' => $category->id,
+            'name' => 'Casque de test',
+        ]);
+
+        $this->actingAs($this->admin(), 'sanctum')
+            ->getJson('/api/v1/admin/products')
+            ->assertOk()
+            ->assertJsonPath('data.0.category.name', 'Électronique');
     }
 }

@@ -22,8 +22,10 @@ class AdminProductController extends Controller
             'page' => ['nullable', 'integer', 'min:1'],
         ]);
 
+        $locale = $request->header('X-Locale', $request->query('locale', 'fr'));
+
         $query = Product::query()
-            ->with(['seller:id,user_id,shop_name', 'category:id,name,slug'])
+            ->with(['seller:id,user_id,shop_name', 'category:id,slug', 'category.translations'])
             ->withCount('orderItems as sold_count')
             ->withSum('orderItems as sold_quantity', 'quantity');
 
@@ -61,7 +63,7 @@ class AdminProductController extends Controller
                 ] : null,
                 'category' => $product->category ? [
                     'id' => $product->category->id,
-                    'name' => $product->category->name,
+                    'name' => $product->category->translatedName($locale),
                 ] : null,
                 'created_at' => $product->created_at?->toIso8601String(),
             ]),
