@@ -115,6 +115,7 @@ return [
         'products.moderate' => 'Modérer tous les produits',
         'promocodes.manage' => 'Gérer les codes promo',
         'banners.manage' => 'Gérer les bannières',
+        'affiliates.manage' => 'Gérer les influenceurs',
         'finances.view' => 'Consulter les finances locales',
     ],
 

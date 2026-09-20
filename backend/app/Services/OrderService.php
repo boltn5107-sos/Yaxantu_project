@@ -32,6 +32,7 @@ class OrderService
         private readonly ConfigService $config,
         private readonly CommissionService $commissions,
         private readonly DeliveryAssignmentService $assigner,
+        private readonly AffiliateService $affiliates,
     ) {}
 
     /**
@@ -58,7 +59,7 @@ class OrderService
             $globalDiscount = 0;
 
             if (! empty($promoCode)) {
-                $error = $promos->errorFor($promoCode, $globalSubtotal);
+                $error = $promos->errorFor($promoCode, $globalSubtotal, $user);
 
                 if ($error !== null) {
                     throw new RuntimeException($error);
@@ -130,6 +131,8 @@ class OrderService
                 'cancellation_reason' => $reason,
             ])->save();
         });
+
+        $this->affiliates->reverseCommissionsForOrder($order);
 
         AuditService::log(AuditEvent::OrderCancelled, $order, ['reason' => $reason]);
 
@@ -334,6 +337,8 @@ class OrderService
             $order->delivery()?->update(['status' => 'failed']);
         });
 
+        $this->affiliates->reverseCommissionsForOrder($order);
+
         AuditService::log(AuditEvent::OrderCancelled, $order, ['reason' => $reason, 'by' => 'seller']);
 
         return $order;
@@ -430,6 +435,8 @@ class OrderService
 
             $this->payments->releaseEscrowForOrder($order);
         });
+
+        $this->affiliates->recordCommissionForOrder($order);
 
         Notification::create([
             'user_id' => $order->user_id,

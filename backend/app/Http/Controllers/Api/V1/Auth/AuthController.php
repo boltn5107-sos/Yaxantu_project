@@ -47,7 +47,7 @@ class AuthController extends Controller
         auth()->login($user);
         $request->session()->regenerate();
 
-        return (new UserResource($user->load('roles', 'seller', 'courier')))
+        return (new UserResource($user->load('roles', 'seller', 'courier', 'affiliate')))
             ->additional(['message' => 'Inscription réussie.'])
             ->response()
             ->setStatusCode(201);
@@ -89,7 +89,7 @@ class AuthController extends Controller
 
         AuditService::log(AuditEvent::LoggedIn, $user);
 
-        return (new UserResource($user->load('roles', 'seller', 'courier')))
+        return (new UserResource($user->load('roles', 'seller', 'courier', 'affiliate')))
             ->additional(['message' => 'Connexion réussie.'])
             ->response();
     }
@@ -128,6 +128,6 @@ class AuthController extends Controller
      */
     public function me(Request $request): UserResource
     {
-        return new UserResource($request->user()->load('roles', 'seller', 'courier'));
+        return new UserResource($request->user()->load('roles', 'seller', 'courier', 'affiliate'));
     }
 }

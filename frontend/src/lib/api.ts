@@ -149,6 +149,12 @@ export type User = {
     transport_type: string | null;
     approved: boolean;
   } | null;
+  affiliate: {
+    id: number;
+    handle: string;
+    status: string;
+    is_active: boolean;
+  } | null;
   created_at: string | null;
 };
 
@@ -568,6 +574,48 @@ export async function getAddresses(): Promise<Address[]> {
   return envelope.data;
 }
 
+export type AddressInput = {
+  type?: "shipping" | "billing";
+  first_name?: string;
+  last_name?: string;
+  company_name?: string;
+  address_line1: string;
+  address_line2?: string;
+  city: string;
+  state_province?: string;
+  postal_code?: string;
+  country_code?: string;
+  phone?: string;
+  is_default?: boolean;
+};
+
+export async function createAddress(input: AddressInput): Promise<Address> {
+  const envelope = await apiFetch<ApiEnvelope<Address>>("/v1/addresses", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+  return envelope.data;
+}
+
+export async function updateAddress(
+  id: number,
+  input: AddressInput,
+): Promise<Address> {
+  const envelope = await apiFetch<ApiEnvelope<Address>>(`/v1/addresses/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(input),
+  });
+  return envelope.data;
+}
+
+export async function deleteAddress(id: number): Promise<string> {
+  const envelope = await apiFetch<ApiEnvelope<{ message: string }>>(
+    `/v1/addresses/${id}`,
+    { method: "DELETE" },
+  );
+  return envelope.message ?? "Adresse supprimée.";
+}
+
 // ── Marketing : bannières, codes promo, parrainage ----------------------
 
 export async function getBanners(): Promise<Banner[]> {
@@ -588,6 +636,103 @@ export async function validatePromoCode(
 
 export async function getReferral(): Promise<ReferralData> {
   const envelope = await apiFetch<ApiEnvelope<ReferralData>>("/v1/referrals");
+  return envelope.data;
+}
+
+// ── Ifluenceurs (programme d'affiliation) -------------------------------
+
+export type AffiliateSpace = {
+  affiliate: {
+    id: number;
+    handle: string;
+    public_name: string | null;
+    status: string;
+    is_active: boolean;
+    commission_rate_pct: number;
+    monthly_cap: number | null;
+    payout_method: string | null;
+    payout_account: string | null;
+    approved_at: string | null;
+  } | null;
+  code: {
+    code: string;
+    discount_type: "percent" | "fixed";
+    discount_value: number;
+    min_order: number | null;
+    max_discount_per_order: number | null;
+    max_uses: number | null;
+    used_count: number;
+    expires_at: string | null;
+  } | null;
+  balance: { available: number; pending: number; currency: string };
+  stats: {
+    orders_count: number;
+    sales_minor: number;
+    discount_granted_minor: number;
+    commissions: {
+      pending: number;
+      approved: number;
+      reversed: number;
+      count: number;
+    };
+    monthly_total: number;
+  };
+  payout_rules: { min_amount: number; max_amount: number; methods: string[] };
+  commissions: {
+    id: number;
+    order_number: string | null;
+    base_amount: number;
+    rate_pct: number;
+    amount: number;
+    status: string;
+    created_at: string | null;
+  }[];
+  payouts: {
+    id: number;
+    amount: number;
+    method: string;
+    status: string;
+    requested_at: string | null;
+    paid_at: string | null;
+  }[];
+};
+
+export type AffiliateApplyInput = {
+  handle: string;
+  public_name?: string;
+  motivation?: string;
+  payout_method?: string;
+  payout_account?: string;
+  payout_email?: string;
+};
+
+export async function getMyAffiliate(): Promise<AffiliateSpace | null> {
+  const envelope = await apiFetch<ApiEnvelope<AffiliateSpace | null>>("/v1/affiliate");
+  return envelope.data;
+}
+
+export async function applyAffiliate(
+  input: AffiliateApplyInput,
+): Promise<{ id: number; handle: string; status: string }> {
+  const envelope = await apiFetch<
+    ApiEnvelope<{ id: number; handle: string; status: string }>
+  >("/v1/affiliate/apply", { method: "POST", body: JSON.stringify(input) });
+  return envelope.data;
+}
+
+export async function requestAffiliatePayout(input: {
+  amount_minor: number;
+  method?: string;
+}): Promise<{
+  payout: { id: number; amount: number; method: string; status: string };
+  balance: { available: number; pending: number };
+}> {
+  const envelope = await apiFetch<
+    ApiEnvelope<{
+      payout: { id: number; amount: number; method: string; status: string };
+      balance: { available: number; pending: number };
+    }>
+  >("/v1/affiliate/payouts", { method: "POST", body: JSON.stringify(input) });
   return envelope.data;
 }
 
@@ -1139,11 +1284,11 @@ export async function createSellerProduct(
 
 export async function updateSellerProduct(
   slug: string,
-  payload: Record<string, unknown>,
+  payload: Record<string, unknown> | FormData,
 ): Promise<{ message: string; data: SellerProduct }> {
   return apiFetch(`/v1/seller/products/${encodeURIComponent(slug)}`, {
     method: "PATCH",
-    body: JSON.stringify(payload),
+    body: payload instanceof FormData ? payload : JSON.stringify(payload),
   });
 }
 
@@ -1311,6 +1456,17 @@ export async function contactHelp(message: string): Promise<{
   return apiFetch("/v1/settings/help/contact", {
     method: "POST",
     body: JSON.stringify({ message }),
+  });
+}
+
+export async function submitSupport(input: {
+  subject?: string;
+  message: string;
+  phone?: string;
+}): Promise<{ message: string; ticket: string }> {
+  return apiFetch("/v1/settings/help/contact", {
+    method: "POST",
+    body: JSON.stringify(input),
   });
 }
 
@@ -1527,6 +1683,248 @@ export type AdminReferral = {
 
 function adminParam(flags: string[]): boolean {
   return flags.includes("admin") || flags.includes("moderator");
+}
+
+// ── Admin : influenceurs (programme d'affiliation) ----------------------
+
+export type AdminAffiliate = {
+  id: number;
+  handle: string;
+  public_name: string | null;
+  status: string;
+  user: { name: string; email: string | null } | null;
+  commission_rate_pct: number;
+  monthly_cap_minor: number | null;
+  balance: { available: number; pending: number };
+  code: string | null;
+  approved_at: string | null;
+  created_at: string | null;
+};
+
+export type AdminAffiliateDetail = {
+  id: number;
+  handle: string;
+  public_name: string | null;
+  status: string;
+  motivation: string | null;
+  note: string | null;
+  user: {
+    id: number;
+    name: string;
+    email: string | null;
+    phone: string | null;
+  } | null;
+  commission_rate_bps: number | null;
+  commission_rate_pct: number;
+  monthly_cap_minor: number | null;
+  payout_method: string | null;
+  payout_account: string | null;
+  payout_email: string | null;
+  approved_at: string | null;
+  code: {
+    id: number;
+    code: string;
+    discount_type: "percent" | "fixed";
+    discount_value: number;
+    is_fixed: boolean;
+    min_order_minor: number | null;
+    max_discount_per_order_minor: number | null;
+    per_user_limit: number | null;
+    max_discount_total_minor: number | null;
+    max_uses: number | null;
+    used_count: number;
+    total_discount_granted_minor: number;
+    is_active: boolean;
+    expires_at: string | null;
+  } | null;
+  balance: {
+    id: number;
+    affiliate_id: number;
+    amount_available: number;
+    amount_pending: number;
+    currency: string;
+  };
+  stats: AffiliateSpace["stats"];
+};
+
+export type AdminAffiliateCommission = {
+  id: number;
+  affiliate: {
+    id: number;
+    handle: string;
+    public_name: string | null;
+  } | null;
+  order_number: string | null;
+  base_amount: number;
+  rate_pct: number;
+  amount: number;
+  status: string;
+  created_at: string | null;
+  approved_at: string | null;
+};
+
+export type AdminAffiliatePayout = {
+  id: number;
+  affiliate: {
+    id: number;
+    handle: string;
+    public_name: string | null;
+  } | null;
+  amount: number;
+  method: string;
+  account: string | null;
+  status: string;
+  requested_at: string | null;
+  approved_at: string | null;
+  paid_at: string | null;
+  reference: string | null;
+  note: string | null;
+};
+
+export async function getAdminAffiliates(params?: {
+  status?: string;
+  q?: string;
+  page?: number;
+}): Promise<{ data: AdminAffiliate[]; meta: PaginatedMeta }> {
+  return apiFetch(`/v1/admin/affiliates${toQueryString(params ?? {})}`);
+}
+
+export async function getAdminAffiliate(id: number): Promise<AdminAffiliateDetail> {
+  const envelope = await apiFetch<ApiEnvelope<AdminAffiliateDetail>>(
+    `/v1/admin/affiliates/${id}`,
+  );
+  return envelope.data;
+}
+
+export async function createAdminAffiliate(input: {
+  email?: string;
+  user_id?: number;
+  handle: string;
+  public_name?: string;
+  commission_rate_bps?: number;
+  monthly_cap_minor?: number;
+  payout_method?: string;
+  payout_account?: string;
+  payout_email?: string;
+  note?: string;
+  code?: string;
+  discount_type?: "percent" | "fixed";
+  discount_value?: number;
+  max_discount_per_order_minor?: number;
+  per_user_limit?: number;
+  max_discount_total_minor?: number;
+}): Promise<string> {
+  const envelope = await apiFetch<ApiEnvelope<{ message: string }>>(
+    "/v1/admin/affiliates",
+    { method: "POST", body: JSON.stringify(input) },
+  );
+  return envelope.message ?? "Influenceur créé.";
+}
+
+export async function updateAdminAffiliate(
+  id: number,
+  input: {
+    public_name?: string;
+    commission_rate_bps?: number;
+    monthly_cap_minor?: number;
+    payout_method?: string;
+    payout_account?: string;
+    payout_email?: string;
+    note?: string;
+    status?: string;
+    code?: string;
+    discount_type?: "percent" | "fixed";
+    discount_value?: number;
+    max_discount_per_order_minor?: number;
+    per_user_limit?: number;
+    max_discount_total_minor?: number;
+  },
+): Promise<string> {
+  const envelope = await apiFetch<ApiEnvelope<{ message: string }>>(
+    `/v1/admin/affiliates/${id}`,
+    { method: "PATCH", body: JSON.stringify(input) },
+  );
+  return envelope.message ?? "Influenceur mis à jour.";
+}
+
+export async function activateAdminAffiliate(
+  id: number,
+  input: {
+    code?: string;
+    discount_type?: "percent" | "fixed";
+    discount_value?: number;
+    max_discount_per_order_minor?: number;
+    per_user_limit?: number;
+    max_discount_total_minor?: number;
+  },
+): Promise<string> {
+  const envelope = await apiFetch<ApiEnvelope<{ message: string }>>(
+    `/v1/admin/affiliates/${id}/activate`,
+    { method: "POST", body: JSON.stringify(input) },
+  );
+  return envelope.message ?? "Candidature activée.";
+}
+
+export async function getAdminAffiliateCommissions(params?: {
+  status?: string;
+  affiliate_id?: number;
+  page?: number;
+}): Promise<{ data: AdminAffiliateCommission[]; meta: PaginatedMeta }> {
+  return apiFetch(`/v1/admin/affiliate-commissions${toQueryString(params ?? {})}`);
+}
+
+export async function approveAdminAffiliateCommission(id: number): Promise<string> {
+  const envelope = await apiFetch<ApiEnvelope<{ message: string }>>(
+    `/v1/admin/affiliate-commissions/${id}/approve`,
+    { method: "POST" },
+  );
+  return envelope.message ?? "Commission approuvée.";
+}
+
+export async function reverseAdminAffiliateCommission(id: number): Promise<string> {
+  const envelope = await apiFetch<ApiEnvelope<{ message: string }>>(
+    `/v1/admin/affiliate-commissions/${id}/reverse`,
+    { method: "POST" },
+  );
+  return envelope.message ?? "Commission annulée.";
+}
+
+export async function getAdminAffiliatePayouts(params?: {
+  status?: string;
+  affiliate_id?: number;
+  page?: number;
+}): Promise<{ data: AdminAffiliatePayout[]; meta: PaginatedMeta }> {
+  return apiFetch(`/v1/admin/affiliate-payouts${toQueryString(params ?? {})}`);
+}
+
+export async function approveAdminAffiliatePayout(id: number): Promise<string> {
+  const envelope = await apiFetch<ApiEnvelope<{ message: string }>>(
+    `/v1/admin/affiliate-payouts/${id}/approve`,
+    { method: "POST" },
+  );
+  return envelope.message ?? "Retrait approuvé.";
+}
+
+export async function payAdminAffiliatePayout(
+  id: number,
+  reference?: string,
+): Promise<string> {
+  const envelope = await apiFetch<ApiEnvelope<{ message: string }>>(
+    `/v1/admin/affiliate-payouts/${id}/pay`,
+    { method: "POST", body: JSON.stringify({ reference }) },
+  );
+  return envelope.message ?? "Retrait marqué payé.";
+}
+
+export async function rejectAdminAffiliatePayout(
+  id: number,
+  reason?: string,
+): Promise<string> {
+  const envelope = await apiFetch<ApiEnvelope<{ message: string }>>(
+    `/v1/admin/affiliate-payouts/${id}/reject`,
+    { method: "POST", body: JSON.stringify({ reason }) },
+  );
+  return envelope.message ?? "Retrait rejeté.";
 }
 
 export async function getAdminStats(): Promise<AdminStats> {

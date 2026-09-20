@@ -96,4 +96,30 @@ class ConfigService
     {
         return $this->int('order.payment_timeout_minutes', 30);
     }
+
+    // ── Programme influenceurs ─────────────────────────────────────────
+
+    /** Taux de commission d'un influenceur par défaut (l'admin peut le surcharger). */
+    public function affiliateCommissionDefaultBps(): int
+    {
+        return $this->int('affiliate.commission.default_bps', 500);
+    }
+
+    /** Plafond global de commission sur une seule commande (null = illimité). */
+    public function affiliateCommissionMaxPerOrderMinor(): ?int
+    {
+        $value = $this->get('affiliate.commission.max_per_order_minor', null);
+
+        return $value === null ? null : (int) $value;
+    }
+
+    public function affiliatePayoutMinimum(): int
+    {
+        return $this->int('affiliate.payout.min_amount_minor', 1000);
+    }
+
+    public function affiliatePayoutMaximum(): int
+    {
+        return $this->int('affiliate.payout.max_amount_minor', 0);
+    }
 }

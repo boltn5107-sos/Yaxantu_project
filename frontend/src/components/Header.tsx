@@ -15,10 +15,16 @@ import {
   Home,
   Apple,
   LogOut,
+  Bell,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { useApi } from "@/lib/useApi";
-import { getCart, getFavorites, type Cart } from "@/lib/api";
+import {
+  getCart,
+  getFavorites,
+  getUnreadNotificationsCount,
+  type Cart,
+} from "@/lib/api";
 
 const categories = [
   { name: "Électronique", href: "/category/electronique", icon: Smartphone },
@@ -52,6 +58,12 @@ export default function Header() {
     async () => (user ? getFavorites() : Promise.resolve([])),
     [user?.id],
     [] as Awaited<ReturnType<typeof getFavorites>>,
+  );
+
+  const { data: unread } = useApi(
+    async () => (user ? getUnreadNotificationsCount() : Promise.resolve(0)),
+    [user?.id],
+    0,
   );
 
   return (
@@ -90,6 +102,11 @@ export default function Header() {
               <Link href="/seller" className="rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors">
                 Vendre
               </Link>
+              {user?.affiliate && (
+                <Link href="/influencer" className="rounded-lg px-3 py-2 text-sm font-medium text-purple-700 hover:bg-purple-50 transition-colors">
+                  Influence
+                </Link>
+              )}
               <Link href="/settings" className="rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors">
                 Réglages
               </Link>
@@ -130,6 +147,21 @@ export default function Header() {
                 </span>
               )}
             </Link>
+
+            {user && (
+              <Link
+                href="/notifications"
+                className="relative inline-flex items-center justify-center rounded-xl p-2 text-gray-700 hover:bg-gray-100 transition-colors"
+                aria-label="Notifications"
+              >
+                <Bell className="h-5 w-5" />
+                {!loading && unread > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-amber-500 px-1 text-[10px] font-bold text-white">
+                    {unread > 9 ? "9+" : unread}
+                  </span>
+                )}
+              </Link>
+            )}
 
             {user ? (
               <div className="hidden sm:flex items-center gap-2">
@@ -227,6 +259,11 @@ export default function Header() {
               <Link href="/delivery" className="rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100" onClick={() => setMobileOpen(false)}>
                 Espace livreur
               </Link>
+              {user?.affiliate && (
+                <Link href="/influencer" className="rounded-lg px-3 py-2 text-sm font-medium text-purple-700 hover:bg-purple-50" onClick={() => setMobileOpen(false)}>
+                  Espace influenceur
+                </Link>
+              )}
               <Link href="/settings" className="rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100" onClick={() => setMobileOpen(false)}>
                 Paramètres
               </Link>

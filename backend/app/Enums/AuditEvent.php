@@ -34,6 +34,17 @@ enum AuditEvent: string
     case ReviewCreated = 'review.created';
     case FavoriteAdded = 'favorite.added';
     case FavoriteRemoved = 'favorite.removed';
+    case AffiliateApplied = 'affiliate.applied';
+    case AffiliateApproved = 'affiliate.approved';
+    case AffiliateStatusChanged = 'affiliate.status_changed';
+    case AffiliateUpdated = 'affiliate.updated';
+    case AffiliateCommissionCreated = 'affiliate.commission.created';
+    case AffiliateCommissionApproved = 'affiliate.commission.approved';
+    case AffiliateCommissionReversed = 'affiliate.commission.reversed';
+    case AffiliatePayoutRequested = 'affiliate.payout.requested';
+    case AffiliatePayoutApproved = 'affiliate.payout.approved';
+    case AffiliatePayoutPaid = 'affiliate.payout.paid';
+    case AffiliatePayoutRejected = 'affiliate.payout.rejected';
 
     public function label(): string
     {
@@ -63,6 +74,17 @@ enum AuditEvent: string
             self::ReviewCreated => 'Avis publié',
             self::FavoriteAdded => 'Produit ajouté aux favoris',
             self::FavoriteRemoved => 'Produit retiré des favoris',
+            self::AffiliateApplied => 'Candidature influenceur',
+            self::AffiliateApproved => 'Influenceur activé',
+            self::AffiliateStatusChanged => 'Statut influenceur modifié',
+            self::AffiliateUpdated => 'Réglages influenceur modifiés',
+            self::AffiliateCommissionCreated => 'Commission influenceur créditée',
+            self::AffiliateCommissionApproved => 'Commission influenceur approuvée',
+            self::AffiliateCommissionReversed => 'Commission influenceur annulée',
+            self::AffiliatePayoutRequested => 'Retrait influenceur demandé',
+            self::AffiliatePayoutApproved => 'Retrait influenceur approuvé',
+            self::AffiliatePayoutPaid => 'Retrait influenceur payé',
+            self::AffiliatePayoutRejected => 'Retrait influenceur rejeté',
         };
     }
 }

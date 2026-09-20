@@ -26,7 +26,7 @@ class PromoController extends Controller
             ? max(0, (int) $request->input('subtotal'))
             : null;
 
-        $error = $this->promos->errorFor($code, $subtotal);
+        $error = $this->promos->errorFor($code, $subtotal, $request->user());
 
         if ($error !== null) {
             return response()->json(['message' => $error], 422);

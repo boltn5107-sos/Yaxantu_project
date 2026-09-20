@@ -56,6 +56,12 @@ class UserResource extends JsonResource
                 'transport_type' => $this->courier->transport_type,
                 'approved' => $this->courier->status === 'approved',
             ]),
+            'affiliate' => $this->whenLoaded('affiliate', fn () => $this->affiliate !== null ? [
+                'id' => $this->affiliate->id,
+                'handle' => $this->affiliate->handle,
+                'status' => $this->affiliate->status,
+                'is_active' => $this->affiliate->isActive(),
+            ] : null),
             'created_at' => $this->created_at?->toIso8601String(),
         ];
     }

@@ -282,10 +282,24 @@ Route::prefix('v1')->group(function () {
         // ── Marketing : codes promo + parrainage ─────────────────────────
 
         Route::post('/promo-codes/validate', [App\Http\Controllers\Api\V1\Promo\PromoController::class, 'validate'])
+            ->middleware('throttle:30,1')
             ->name('api.v1.promo-codes.validate');
 
         Route::get('/referrals', [App\Http\Controllers\Api\V1\Promo\ReferralController::class, 'index'])
             ->name('api.v1.referrals.index');
+
+        // ── Esace influenceur (affiliation) ──────────────────────────────
+
+        Route::get('/affiliate', [App\Http\Controllers\Api\V1\AffiliateController::class, 'index'])
+            ->name('api.v1.affiliate.index');
+
+        Route::post('/affiliate/apply', [App\Http\Controllers\Api\V1\AffiliateController::class, 'apply'])
+            ->middleware('throttle:5,10')
+            ->name('api.v1.affiliate.apply');
+
+        Route::post('/affiliate/payouts', [App\Http\Controllers\Api\V1\AffiliateController::class, 'requestPayout'])
+            ->middleware('throttle:5,1')
+            ->name('api.v1.affiliate.payouts');
 
         // ── Litiges (phase 3) : photo + message vocal ─────────────────────
 
@@ -428,6 +442,51 @@ Route::prefix('v1')->group(function () {
 
             Route::get('/referrals', [App\Http\Controllers\Api\V1\Admin\AdminReferralController::class, 'index'])
                 ->name('api.v1.admin.referrals.index');
+
+            // Influenceurs : programme d'affiliation (sommes pilotées).
+            Route::get('/affiliates', [App\Http\Controllers\Api\V1\Admin\AdminAffiliateController::class, 'index'])
+                ->name('api.v1.admin.affiliates.index');
+
+            Route::post('/affiliates', [App\Http\Controllers\Api\V1\Admin\AdminAffiliateController::class, 'store'])
+                ->middleware('can:affiliates.manage')
+                ->name('api.v1.admin.affiliates.store');
+
+            Route::get('/affiliates/{affiliate}', [App\Http\Controllers\Api\V1\Admin\AdminAffiliateController::class, 'show'])
+                ->name('api.v1.admin.affiliates.show');
+
+            Route::patch('/affiliates/{affiliate}', [App\Http\Controllers\Api\V1\Admin\AdminAffiliateController::class, 'update'])
+                ->middleware('can:affiliates.manage')
+                ->name('api.v1.admin.affiliates.update');
+
+            Route::post('/affiliates/{affiliate}/activate', [App\Http\Controllers\Api\V1\Admin\AdminAffiliateController::class, 'activate'])
+                ->middleware('can:affiliates.manage')
+                ->name('api.v1.admin.affiliates.activate');
+
+            Route::get('/affiliate-commissions', [App\Http\Controllers\Api\V1\Admin\AdminAffiliateController::class, 'commissions'])
+                ->name('api.v1.admin.affiliate-commissions.index');
+
+            Route::post('/affiliate-commissions/{commission}/approve', [App\Http\Controllers\Api\V1\Admin\AdminAffiliateController::class, 'approveCommission'])
+                ->middleware('can:affiliates.manage')
+                ->name('api.v1.admin.affiliate-commissions.approve');
+
+            Route::post('/affiliate-commissions/{commission}/reverse', [App\Http\Controllers\Api\V1\Admin\AdminAffiliateController::class, 'reverseCommission'])
+                ->middleware('can:affiliates.manage')
+                ->name('api.v1.admin.affiliate-commissions.reverse');
+
+            Route::get('/affiliate-payouts', [App\Http\Controllers\Api\V1\Admin\AdminAffiliateController::class, 'payouts'])
+                ->name('api.v1.admin.affiliate-payouts.index');
+
+            Route::post('/affiliate-payouts/{payout}/approve', [App\Http\Controllers\Api\V1\Admin\AdminAffiliateController::class, 'approvePayout'])
+                ->middleware('can:affiliates.manage')
+                ->name('api.v1.admin.affiliate-payouts.approve');
+
+            Route::post('/affiliate-payouts/{payout}/pay', [App\Http\Controllers\Api\V1\Admin\AdminAffiliateController::class, 'payPayout'])
+                ->middleware('can:affiliates.manage')
+                ->name('api.v1.admin.affiliate-payouts.pay');
+
+            Route::post('/affiliate-payouts/{payout}/reject', [App\Http\Controllers\Api\V1\Admin\AdminAffiliateController::class, 'rejectPayout'])
+                ->middleware('can:affiliates.manage')
+                ->name('api.v1.admin.affiliate-payouts.reject');
         });
 
     });

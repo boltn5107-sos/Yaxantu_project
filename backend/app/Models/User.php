@@ -83,6 +83,11 @@ class User extends Authenticatable
         return $this->hasOne(Courier::class);
     }
 
+    public function affiliate(): HasOne
+    {
+        return $this->hasOne(Affiliate::class);
+    }
+
     public function biometricCredentials(): HasMany
     {
         return $this->hasMany(BiometricCredential::class);

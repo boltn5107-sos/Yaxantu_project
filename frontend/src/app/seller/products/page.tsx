@@ -10,6 +10,7 @@ import {
   Trash2,
   EyeOff,
   Eye,
+  Pencil,
   Rocket,
   Wrench,
 } from "lucide-react";
@@ -224,6 +225,13 @@ export default function SellerProductsPage() {
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
+                  <Link
+                    href={`/seller/products/${product.slug}/edit`}
+                    className="inline-flex items-center gap-1.5 rounded-xl border border-gray-300 bg-white px-3 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50"
+                  >
+                    <Pencil className="h-4 w-4" />
+                    Modifier
+                  </Link>
                   <button
                     type="button"
                     onClick={() => toggle(product, !product.is_active)}

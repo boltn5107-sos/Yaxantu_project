@@ -3,12 +3,14 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class PromoCode extends Model
 {
     protected $fillable = [
         'code',
+        'affiliate_id',
         'description',
         'discount_type',
         'discount_value',
@@ -19,11 +21,15 @@ class PromoCode extends Model
         'is_active',
         'starts_at',
         'expires_at',
+        'max_discount_per_order_minor',
+        'per_user_limit',
+        'max_discount_total_minor',
     ];
 
     protected function casts(): array
     {
         return [
+            'affiliate_id' => 'integer',
             'min_order_minor' => 'integer',
             'max_uses' => 'integer',
             'used_count' => 'integer',
@@ -31,6 +37,9 @@ class PromoCode extends Model
             'is_active' => 'boolean',
             'starts_at' => 'datetime',
             'expires_at' => 'datetime',
+            'max_discount_per_order_minor' => 'integer',
+            'per_user_limit' => 'integer',
+            'max_discount_total_minor' => 'integer',
         ];
     }
 
@@ -40,7 +49,7 @@ class PromoCode extends Model
     }
 
     /**
-     * Réduction appliquée sur un sous-total (minor, FCFA).
+     * Réduction théorique sur un sous-total (minor, FCFA).
      */
     public function discountFor(int $subtotalMinor): int
     {
@@ -49,6 +58,43 @@ class PromoCode extends Model
         }
 
         return min((int) $this->discount_value, $subtotalMinor);
+    }
+
+    /**
+     * Réduction effectivement accordée, bornée par le plafond par commande.
+     */
+    public function discountCappedFor(int $subtotalMinor): int
+    {
+        $discount = $this->discountFor($subtotalMinor);
+
+        if ($this->max_discount_per_order_minor !== null) {
+            $discount = min($discount, (int) $this->max_discount_per_order_minor);
+        }
+
+        return max(0, $discount);
+    }
+
+    /**
+     * Nombre d'utilisations du code par un même client.
+     */
+    public function usageCountForUser(int $userId): int
+    {
+        return Order::query()
+            ->where('promo_code_id', $this->id)
+            ->where('user_id', $userId)
+            ->whereNotIn('status', ['cancelled', 'refunded'])
+            ->count();
+    }
+
+    /**
+     * Cumul des remises réellement accordées (une fois livrées ou en cours).
+     */
+    public function totalDiscountGranted(): int
+    {
+        return (int) Order::query()
+            ->where('promo_code_id', $this->id)
+            ->whereNotIn('status', ['cancelled', 'refunded'])
+            ->sum('discount_minor');
     }
 
     /**
@@ -82,6 +128,11 @@ class PromoCode extends Model
     public function orders(): HasMany
     {
         return $this->hasMany(Order::class);
+    }
+
+    public function affiliate(): BelongsTo
+    {
+        return $this->belongsTo(Affiliate::class);
     }
 
     public function toPublicArray(): array

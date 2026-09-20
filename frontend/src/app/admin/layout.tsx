@@ -13,6 +13,7 @@ import {
   Image,
   BadgePercent,
   Gift,
+  Megaphone,
   Loader2,
   ArrowLeft,
 } from "lucide-react";
@@ -28,6 +29,7 @@ const links = [
   { href: "/admin/banners", label: "Bannières", icon: Image },
   { href: "/admin/promo-codes", label: "Codes promo", icon: BadgePercent },
   { href: "/admin/referrals", label: "Parrainages", icon: Gift },
+  { href: "/admin/affiliates", label: "Influenceurs", icon: Megaphone },
 ] as const;
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {

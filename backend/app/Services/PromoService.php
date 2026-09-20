@@ -25,8 +25,12 @@ class PromoService
 
     /**
      * Message d'erreur si le code ne peut pas être appliqué, sinon null.
+     *
+     * Les règles liées au client (auto-usage influenceur, limite par utilisateur,
+     * plafond cumulé de remise) ne sont vérifiées que si un User est fourni :
+     * elles restent calculées côté serveur à partir de la base.
      */
-    public function errorFor(string $code, ?int $subtotalMinor = null): ?string
+    public function errorFor(string $code, ?int $subtotalMinor = null, ?User $user = null): ?string
     {
         $promo = $this->findActive($code);
 
@@ -34,17 +38,45 @@ class PromoService
             return 'Ce code promo est invalide.';
         }
 
-        return $promo->errorFor($subtotalMinor);
+        $error = $promo->errorFor($subtotalMinor);
+
+        if ($error !== null) {
+            return $error;
+        }
+
+        if ($promo->affiliate_id !== null && $user !== null) {
+            $affiliate = $promo->affiliate;
+
+            // Un influenceur ne peut pas utiliser son propre code.
+            if ($affiliate !== null && (int) $affiliate->user_id === (int) $user->getKey()) {
+                return 'Vous ne pouvez pas utiliser votre propre code de parrainage.';
+            }
+
+            // Un influenceur suspendu ne génère plus aucune remise.
+            if ($affiliate !== null && ! $affiliate->isActive()) {
+                return 'Ce code promo n\'est plus actif.';
+            }
+
+            if ($promo->per_user_limit !== null && $promo->usageCountForUser((int) $user->getKey()) >= (int) $promo->per_user_limit) {
+                return 'Vous avez déjà utilisé ce code le nombre de fois autorisé.';
+            }
+
+            if ($promo->max_discount_total_minor !== null && $promo->totalDiscountGranted() >= (int) $promo->max_discount_total_minor) {
+                return 'Ce code promo a atteint son plafond de remise.';
+            }
+        }
+
+        return null;
     }
 
     /**
-     * Réduction totale (minor) pour un sous-total donné.
+     * Réduction totale (minor) pour un sous-total donné, plafonnée par code.
      */
     public function discountFor(string $code, int $subtotalMinor): int
     {
         $promo = $this->findActive($code);
 
-        return $promo?->discountFor($subtotalMinor) ?? 0;
+        return $promo?->discountCappedFor($subtotalMinor) ?? 0;
     }
 
     public function markUsed(PromoCode $promo): void
