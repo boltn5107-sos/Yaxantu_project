@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useEffect, useState } from "react";
+import { use, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -14,6 +14,7 @@ import {
   BadgeCheck,
   Check,
   Loader2,
+  MessageCircle,
 } from "lucide-react";
 import {
   getProduct,
@@ -53,7 +54,7 @@ export default function ProductPage({
   const [selectedImage, setSelectedImage] = useState(0);
 
   const router = useRouter();
-  const { user, loading: authLoading } = useAuth();
+  const { user } = useAuth();
 
   const { data: favoriteProducts } = useApi<Product[]>(
     async () => (user ? getFavorites() : Promise.resolve([])),
@@ -319,6 +320,18 @@ export default function ProductPage({
                 <Heart className={`h-5 w-5 ${isFavorite ? "fill-current" : ""}`} />
               )}
               {isFavorite ? "Dans vos favoris" : "Ajouter aux favoris"}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                const url = typeof window !== "undefined" ? window.location.href : "";
+                const text = `Je vous recommande « ${product.name} » sur Yaxantu à ${formatPrice(product.price)} : ${url}`;
+                window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank", "noopener");
+              }}
+              className="inline-flex items-center justify-center gap-2 rounded-xl border border-emerald-300 bg-emerald-50 px-6 py-3 text-sm font-semibold text-emerald-700 hover:bg-emerald-100 transition-colors"
+            >
+              <MessageCircle className="h-5 w-5" />
+              Partager
             </button>
           </div>
 

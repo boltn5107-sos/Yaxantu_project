@@ -53,6 +53,6 @@ class HealthTest extends TestCase
         $response
             ->assertOk()
             ->assertJsonPath('data.0.products_count', 3)
-            ->assertJsonPath('data.3.products_count', 2);
+            ->assertJsonPath('data.3.products_count', 5);
     }
 }

@@ -40,20 +40,41 @@ class OrderService
      * @param array<string, mixed> $addressData données d'adresse de livraison
      * @param array<string, mixed> $paymentOptions options (téléphone, etc.)
      */
-    public function checkout(User $user, Cart $cart, array $addressData, string $paymentMethod = 'cod', array $paymentOptions = [], bool $shippingApproved = false): array
+    public function checkout(User $user, Cart $cart, array $addressData, string $paymentMethod = 'cod', array $paymentOptions = [], bool $shippingApproved = false, ?string $promoCode = null): array
     {
         $this->assertCartNotEmpty($cart);
 
         $address = $this->createShippingAddress($user, $addressData);
+        $promos = app(PromoService::class);
 
         $orders = [];
         $payments = [];
 
-        DB::transaction(function () use ($user, $cart, $address, $paymentMethod, $paymentOptions, $shippingApproved, &$orders, &$payments) {
+        DB::transaction(function () use ($user, $cart, $address, $paymentMethod, $paymentOptions, $shippingApproved, $promoCode, $promos, &$orders, &$payments) {
             $grouped = $cart->items->groupBy('seller_id');
 
+            $globalSubtotal = (int) $cart->items->sum('total_minor');
+            $promo = null;
+            $globalDiscount = 0;
+
+            if (! empty($promoCode)) {
+                $error = $promos->errorFor($promoCode, $globalSubtotal);
+
+                if ($error !== null) {
+                    throw new RuntimeException($error);
+                }
+
+                $promo = $promos->findActive($promoCode);
+                $globalDiscount = $promos->discountFor($promoCode, $globalSubtotal);
+            }
+
             foreach ($grouped as $sellerId => $items) {
-                $order = $this->createOrder($user, (int) $sellerId, $items, $address, $cart->currency, $shippingApproved);
+                $orderSubtotal = (int) $items->sum('total_minor');
+                $shareDiscount = $globalDiscount > 0
+                    ? (int) floor(($orderSubtotal / $globalSubtotal) * $globalDiscount)
+                    : 0;
+
+                $order = $this->createOrder($user, (int) $sellerId, $items, $address, $cart->currency, $shippingApproved, $shareDiscount, $promo?->id);
                 $orders[] = $order;
 
                 $this->decrementStock($items);
@@ -65,8 +86,15 @@ class OrderService
                 AuditService::log(AuditEvent::OrderPlaced, $order, [
                     'items_count' => $items->count(),
                     'total_minor' => $order->total_minor,
+                    'discount_minor' => $order->discount_minor,
                 ]);
             }
+
+            if ($promo !== null) {
+                $promos->markUsed($promo);
+            }
+
+            $promos->rewardIfEligible($user);
 
             $cart->forceFill([
                 'status' => 'completed',
@@ -108,7 +136,7 @@ class OrderService
         return $order;
     }
 
-    public function createOrder(User $user, int $sellerId, $items, $address, string $currency = 'XOF', bool $shippingApproved = false): Order
+    public function createOrder(User $user, int $sellerId, $items, $address, string $currency = 'XOF', bool $shippingApproved = false, int $discountMinor = 0, ?int $promoCodeId = null): Order
     {
         $subtotal = $items->sum(fn ($item) => (int) $item->total_minor);
         $shippingRate = $items->contains(fn ($item) => $item->requires_shipping)
@@ -133,7 +161,9 @@ class OrderService
             'shipping_method' => 'standard',
             'shipping_rate_minor' => $shippingRate,
             'subtotal_minor' => $subtotal,
-            'total_minor' => $subtotal + $shippingRate,
+            'discount_minor' => $discountMinor,
+            'total_minor' => max(0, $subtotal - $discountMinor) + $shippingRate,
+            'promo_code_id' => $promoCodeId,
             'currency' => $currency,
             'placed_at' => now(),
         ]);

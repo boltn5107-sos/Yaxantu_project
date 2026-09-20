@@ -14,9 +14,11 @@ import {
   Loader2,
   ChevronRight,
   Volume2,
+  Gift,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { getSettings, updateSettings, contactHelp, type SettingsGroups } from "@/lib/api";
+import ReferralCard from "@/components/ReferralCard";
 
 type ToggleKey =
   | "voice_mode"
@@ -218,6 +220,15 @@ export default function SettingsPage() {
               Enregistrer
             </button>
           </form>
+        </Section>
+
+        {/* Parrainage */}
+        <Section
+          icon={<Gift className="h-5 w-5" />}
+          title="Parrainage"
+          hint="Invitez vos proches, gagnez ensemble"
+        >
+          <ReferralCard />
         </Section>
 
         {/* Accessibilité */}

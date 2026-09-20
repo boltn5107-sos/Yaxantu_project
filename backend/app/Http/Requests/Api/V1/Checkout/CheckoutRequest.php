@@ -29,6 +29,7 @@ class CheckoutRequest extends FormRequest
             'mobile_money_phone' => ['nullable', 'required_if:payment_method,mobile_money,wave', 'string', 'max:20'],
             'mobile_money_provider' => ['nullable', 'in:momo,orange'],
             'shipping_approved' => ['nullable', 'boolean'],
+            'promo_code' => ['nullable', 'string', 'max:40'],
             'notes' => ['nullable', 'string', 'max:1000'],
         ];
     }

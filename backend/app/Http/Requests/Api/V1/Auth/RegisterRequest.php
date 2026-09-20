@@ -19,6 +19,7 @@ class RegisterRequest extends FormRequest
             'email' => ['required', 'email', 'max:255', 'unique:users,email'],
             'phone' => ['nullable', 'string', 'max:30', 'unique:users,phone'],
             'password' => ['required', 'confirmed', Password::min(8)->mixedCase()->numbers()],
+            'ref' => ['nullable', 'string', 'max:32'],
         ];
     }
 }

@@ -37,6 +37,13 @@ class AuthController extends Controller
 
         AuditService::log(AuditEvent::Registered, $user);
 
+        $promos = app(\App\Services\PromoService::class);
+        $promos->ensureCode($user);
+
+        if (! empty($data['ref'])) {
+            $promos->registerReferral($user, $data['ref']);
+        }
+
         auth()->login($user);
         $request->session()->regenerate();
 

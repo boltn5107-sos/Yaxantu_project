@@ -17,6 +17,7 @@ class UserResource extends JsonResource
             'name' => $this->name,
             'email' => $this->email,
             'phone' => $this->phone,
+            'referral_code' => $this->referral_code,
             'phone_verified_at' => $this->phone_verified_at?->toIso8601String(),
             'locale' => $this->locale,
             'avatar' => Media::url($this->avatar_path),

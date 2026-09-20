@@ -22,6 +22,7 @@ class Order extends Model
         'shipping_rate_minor',
         'tax_rate_minor',
         'discount_minor',
+        'promo_code_id',
         'subtotal_minor',
         'total_minor',
         'currency',
@@ -87,6 +88,11 @@ class Order extends Model
     public function dispute(): HasOne
     {
         return $this->hasOne(Dispute::class);
+    }
+
+    public function promoCode(): BelongsTo
+    {
+        return $this->belongsTo(PromoCode::class);
     }
 
     public function getTotalQuantity(): int

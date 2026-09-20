@@ -217,6 +217,7 @@ export type CheckoutPayload = {
   mobile_money_phone?: string;
   mobile_money_provider?: string;
   shipping_approved?: boolean;
+  promo_code?: string;
   notes?: string;
 };
 
@@ -276,7 +277,9 @@ export type Order = {
   shipping_status: string;
   subtotal: number;
   shipping: number;
+  discount: number;
   total: number;
+  promo_code?: string | null;
   currency: string;
   placed_at: string | null;
   cancelled_at: string | null;
@@ -293,6 +296,32 @@ export type PaymentMethod = {
   id: string;
   label: string;
   description: string;
+};
+
+export type Banner = {
+  id: number;
+  title: string;
+  subtitle: string | null;
+  image: string;
+  link: string | null;
+};
+
+export type PromoValidation = {
+  code: string;
+  description: string | null;
+  discount_type: "percent" | "fixed";
+  discount_value: number;
+  is_fixed: boolean;
+  min_order_minor: number | null;
+  discount: number | null;
+};
+
+export type ReferralData = {
+  code: string;
+  link: string;
+  invited_count: number;
+  reward_codes: string[];
+  reward_message: string;
 };
 
 export type Review = {
@@ -447,6 +476,7 @@ export async function register(input: {
   password: string;
   password_confirmation: string;
   phone?: string;
+  ref?: string;
 }): Promise<User> {
   const envelope = await apiFetch<ApiEnvelope<User>>("/v1/auth/register", {
     method: "POST",
@@ -535,6 +565,29 @@ export async function clearCart(): Promise<void> {
 
 export async function getAddresses(): Promise<Address[]> {
   const envelope = await apiFetch<ApiEnvelope<Address[]>>("/v1/addresses");
+  return envelope.data;
+}
+
+// ── Marketing : bannières, codes promo, parrainage ----------------------
+
+export async function getBanners(): Promise<Banner[]> {
+  const envelope = await apiFetch<ApiEnvelope<Banner[]>>("/v1/banners");
+  return envelope.data ?? [];
+}
+
+export async function validatePromoCode(
+  code: string,
+  subtotal?: number,
+): Promise<PromoValidation> {
+  const envelope = await apiFetch<ApiEnvelope<PromoValidation>>(
+    "/v1/promo-codes/validate",
+    { method: "POST", body: JSON.stringify({ code, subtotal }) },
+  );
+  return envelope.data;
+}
+
+export async function getReferral(): Promise<ReferralData> {
+  const envelope = await apiFetch<ApiEnvelope<ReferralData>>("/v1/referrals");
   return envelope.data;
 }
 

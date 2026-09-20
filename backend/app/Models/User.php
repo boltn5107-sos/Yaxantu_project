@@ -7,6 +7,7 @@ use App\Enums\UserStatus;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
@@ -24,6 +25,8 @@ class User extends Authenticatable
         'name',
         'email',
         'phone',
+        'referral_code',
+        'sponsor_id',
         'phone_verified_at',
         'password',
         'locale',
@@ -108,6 +111,16 @@ class User extends Authenticatable
     public function reviews(): HasMany
     {
         return $this->hasMany(Review::class);
+    }
+
+    public function sponsor(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'sponsor_id');
+    }
+
+    public function referralsAsSponsor(): HasMany
+    {
+        return $this->hasMany(Referral::class, 'referrer_id');
     }
 
     public function auditLogs(): HasMany

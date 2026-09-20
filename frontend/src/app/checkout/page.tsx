@@ -9,12 +9,14 @@ import {
   Smartphone,
   Loader2,
   Banknote,
+  Tag,
 } from "lucide-react";
 import {
   getCart,
   getPaymentMethods,
   getAddresses,
   checkout,
+  validatePromoCode,
   type Cart,
   type Address,
   type ApiError,
@@ -58,7 +60,8 @@ export default function CheckoutPage() {
     [],
   );
 
-  const [cart, setCart] = useState<Cart>(EMPTY_CART);
+  const cart = remoteCart;
+
   const [form, setForm] = useState({
     first_name: "",
     last_name: "",
@@ -79,10 +82,11 @@ export default function CheckoutPage() {
   const [shippingApproved, setShippingApproved] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
-
-  useEffect(() => {
-    if (remoteCart) setCart(remoteCart);
-  }, [remoteCart]);
+  const [promoInput, setPromoInput] = useState("");
+  const [appliedPromo, setAppliedPromo] = useState<string | null>(null);
+  const [promoApplying, setPromoApplying] = useState(false);
+  const [promoError, setPromoError] = useState<string | null>(null);
+  const [promoDiscount, setPromoDiscount] = useState(0);
 
   useEffect(() => {
     if (authLoading || cartLoading) return;
@@ -115,6 +119,31 @@ export default function CheckoutPage() {
     }
   };
 
+  const applyPromo = async () => {
+    const code = promoInput.trim();
+    if (!code) return;
+    setPromoApplying(true);
+    setPromoError(null);
+    try {
+      const result = await validatePromoCode(code, cart.subtotal);
+      setAppliedPromo(result.code);
+      setPromoDiscount(result.discount ?? 0);
+    } catch (err) {
+      setAppliedPromo(null);
+      setPromoDiscount(0);
+      setPromoError(err instanceof Error ? err.message : "Code promo invalide.");
+    } finally {
+      setPromoApplying(false);
+    }
+  };
+
+  const clearPromo = () => {
+    setAppliedPromo(null);
+    setPromoDiscount(0);
+    setPromoInput("");
+    setPromoError(null);
+  };
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
@@ -143,6 +172,7 @@ export default function CheckoutPage() {
           : { shipping_address_id: addressId === "" ? undefined : addressId }),
         payment_method: paymentMethod,
         shipping_approved: shippingApproved,
+        ...(appliedPromo ? { promo_code: appliedPromo } : {}),
         ...(paymentMethod === "mobile_money"
           ? { mobile_money_phone: mobileMoneyPhone, mobile_money_provider: provider }
           : {}),
@@ -341,6 +371,51 @@ export default function CheckoutPage() {
               )}
             </div>
 
+            <div className="rounded-2xl border border-gray-200 bg-white p-6 sm:p-8 space-y-4">
+              <div className="flex items-center gap-2">
+                <Tag className="h-5 w-5 text-blue-700" />
+                <h2 className="text-lg font-semibold text-gray-900">Code promo</h2>
+              </div>
+              {appliedPromo ? (
+                <div className="flex items-center justify-between gap-3 rounded-xl border border-emerald-200 bg-emerald-50/60 px-4 py-3">
+                  <div>
+                    <p className="text-sm font-semibold text-emerald-800">{appliedPromo} appliqué</p>
+                    <p className="text-xs text-emerald-700">
+                      Vous économisez {formatPrice(promoDiscount)} sur votre commande.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={clearPromo}
+                    className="shrink-0 text-sm font-medium text-emerald-700 underline underline-offset-2 hover:text-emerald-900"
+                  >
+                    Retirer
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <div className="flex gap-3">
+                    <input
+                      value={promoInput}
+                      onChange={(e) => setPromoInput(e.target.value.toUpperCase())}
+                      placeholder="Ex : LAUNCH2026"
+                      className="flex-1 rounded-xl border border-gray-300 px-4 py-2.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => void applyPromo()}
+                      disabled={promoApplying || !promoInput.trim()}
+                      className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 transition-colors disabled:opacity-60"
+                    >
+                      {promoApplying && <Loader2 className="h-4 w-4 animate-spin" />}
+                      Appliquer
+                    </button>
+                  </div>
+                  {promoError && <p className="text-xs text-red-600">{promoError}</p>}
+                </>
+              )}
+            </div>
+
             {error && (
               <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
                 {error}
@@ -402,9 +477,15 @@ export default function CheckoutPage() {
                     {cart.shipping === 0 ? "Gratuite" : formatPrice(cart.shipping)}
                   </span>
                 </div>
+                {promoDiscount > 0 && (
+                  <div className="flex items-center justify-between font-medium text-emerald-700">
+                    <span>Remise ({appliedPromo})</span>
+                    <span>-{formatPrice(promoDiscount)}</span>
+                  </div>
+                )}
                 <div className="border-t border-gray-200 pt-3 flex items-center justify-between text-base font-semibold text-gray-900">
                   <span>Total</span>
-                  <span>{formatPrice(cart.total)}</span>
+                  <span>{formatPrice(Math.max(0, cart.total - promoDiscount))}</span>
                 </div>
               </div>
             </div>

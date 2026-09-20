@@ -28,6 +28,7 @@ export default function RegisterPage() {
     e.preventDefault();
     setSubmitting(true);
     setError(null);
+    const refCode = new URLSearchParams(window.location.search).get("ref");
     try {
       await register({
         name: form.name,
@@ -35,6 +36,7 @@ export default function RegisterPage() {
         password: form.password,
         password_confirmation: form.password_confirmation,
         phone: form.phone || undefined,
+        ...(refCode ? { ref: refCode } : {}),
       });
       const me = await refresh();
       router.push(landingPathFor(me));

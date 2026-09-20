@@ -18,6 +18,11 @@ Route::prefix('v1')->group(function () {
     Route::get('/categories', [App\Http\Controllers\Api\V1\CategoryController::class, 'index'])
         ->name('api.v1.categories.index');
 
+    // Bannières actives de la vitrine (lancement / promo).
+
+    Route::get('/banners', [App\Http\Controllers\Api\V1\Banner\BannerController::class, 'index'])
+        ->name('api.v1.banners.index');
+
     // ── Catalogue public ───────────────────────────────────────────────
     // Produits : liste + recherche + filtres, puis fiche détaillée.
 
@@ -273,6 +278,14 @@ Route::prefix('v1')->group(function () {
 
         Route::post('/seller/shop/share', [App\Http\Controllers\Api\V1\ShopController::class, 'trackShare'])
             ->name('api.v1.seller.shop.share');
+
+        // ── Marketing : codes promo + parrainage ─────────────────────────
+
+        Route::post('/promo-codes/validate', [App\Http\Controllers\Api\V1\Promo\PromoController::class, 'validate'])
+            ->name('api.v1.promo-codes.validate');
+
+        Route::get('/referrals', [App\Http\Controllers\Api\V1\Promo\ReferralController::class, 'index'])
+            ->name('api.v1.referrals.index');
 
         // ── Litiges (phase 3) : photo + message vocal ─────────────────────
 

@@ -49,6 +49,7 @@ class CheckoutController extends Controller
                 $data['payment_method'] ?? 'cod',
                 $paymentOptions,
                 (bool) ($data['shipping_approved'] ?? false),
+                $data['promo_code'] ?? null,
             );
         } catch (RuntimeException $e) {
             return response()->json(['message' => $e->getMessage()], 422);

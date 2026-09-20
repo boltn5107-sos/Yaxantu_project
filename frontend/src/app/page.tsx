@@ -17,6 +17,7 @@ import { useApi } from "@/lib/useApi";
 import { fallbackImage } from "@/lib/utils";
 import CategoryCard from "@/components/CategoryCard";
 import ProductCard from "@/components/ProductCard";
+import BannersCarousel from "@/components/BannersCarousel";
 
 const fallbackCategories: Category[] = [
   {
@@ -202,6 +203,10 @@ export default function HomePage() {
             </div>
           </div>
         </div>
+      </section>
+
+      <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <BannersCarousel />
       </section>
 
       <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
