@@ -339,6 +339,11 @@ export type Review = {
   author: string;
   is_verified_purchase: boolean;
   created_at: string | null;
+  reply?: {
+    content: string;
+    author?: string;
+    created_at?: string | null;
+  } | null;
 };
 
 export type AppNotification = {
@@ -815,6 +820,41 @@ export async function submitReview(
       body: JSON.stringify(input),
     },
   );
+  return envelope.data;
+}
+
+export type SellerReview = {
+  id: number;
+  rating: number;
+  title: string | null;
+  content: string | null;
+  status: string;
+  author: string;
+  is_verified_purchase: boolean;
+  product: { id: number; slug: string; name: string } | null;
+  reply: { content: string; updated_at: string | null } | null;
+  created_at: string | null;
+};
+
+export async function getSellerReviews(params?: {
+  status?: string;
+  with_reply?: boolean;
+  page?: number;
+}): Promise<{ data: SellerReview[]; meta: PaginatedMeta }> {
+  return apiFetch(`/v1/seller/reviews${toQueryString(params ?? {})}`);
+}
+
+export async function replySellerReview(
+  reviewId: number,
+  content: string,
+): Promise<{ id: number; reply: { content: string; updated_at: string | null } }> {
+  const envelope = await apiFetch<{
+    message: string;
+    data: { id: number; reply: { content: string; updated_at: string | null } };
+  }>(`/v1/seller/reviews/${reviewId}/reply`, {
+    method: "POST",
+    body: JSON.stringify({ content }),
+  });
   return envelope.data;
 }
 
@@ -1974,6 +2014,139 @@ export async function cancelAdminOrder(
     { method: "POST", body: JSON.stringify({ reason }) },
   );
   return envelope.message ?? "Commande annulée.";
+}
+
+// ── Administration : litiges (médiation) -----------------------------------
+
+export type AdminDispute = {
+  id: number;
+  order_number: string | null;
+  order_total: number;
+  order_status: string | null;
+  status: string;
+  title: string;
+  buyer: string | null;
+  shop: string | null;
+  messages_count: number;
+  created_at: string | null;
+};
+
+export type AdminDisputeMessage = {
+  id: number;
+  by: string | null;
+  text: string | null;
+  photo: string | null;
+  voice: string | null;
+  created_at: string | null;
+};
+
+export type AdminDisputeDetail = {
+  id: number;
+  status: string;
+  title: string;
+  description: string | null;
+  photo: string | null;
+  voice: string | null;
+  buyer: { name: string; email: string | null; phone: string | null } | null;
+  shop: string | null;
+  order: {
+    order_number: string;
+    status: string;
+    status_label: string;
+    total: number;
+    payment_status: string;
+  } | null;
+  messages: AdminDisputeMessage[];
+  resolution: Record<string, unknown> | null;
+  resolved_at: string | null;
+  created_at: string | null;
+};
+
+export async function getAdminDisputes(params?: {
+  status?: string;
+  search?: string;
+  page?: number;
+}): Promise<{ data: AdminDispute[]; meta: PaginatedMeta }> {
+  return apiFetch(`/v1/admin/disputes${toQueryString(params ?? {})}`);
+}
+
+export async function getAdminDispute(
+  id: number,
+): Promise<AdminDisputeDetail> {
+  const envelope = await apiFetch<ApiEnvelope<AdminDisputeDetail>>(
+    `/v1/admin/disputes/${id}`,
+  );
+  return envelope.data;
+}
+
+export async function resolveAdminDispute(
+  id: number,
+  input: { action: "no_refund" | "refund_full" | "refund_partial"; amount_minor?: number; note?: string },
+): Promise<{ status: "resolved"; id: number }> {
+  const envelope = await apiFetch<ApiEnvelope<{ id: number; status: "resolved" }>>(
+    `/v1/admin/disputes/${id}/resolve`,
+    { method: "POST", body: JSON.stringify(input) },
+  );
+  return envelope.data;
+}
+
+// ── Administration : versements des vendeurs --------------------------------
+
+export type AdminSellerPayout = {
+  id: number;
+  seller: {
+    id: number;
+    shop_name: string;
+    slug: string | null;
+    currency: string | null;
+  } | null;
+  amount: number;
+  currency: string;
+  method: string;
+  status: string;
+  requested_at: string | null;
+  created_at: string | null;
+  processed_at: string | null;
+  reference: string | null;
+  notes: string | null;
+};
+
+export async function getAdminPayouts(params?: {
+  status?: string;
+  search?: string;
+  page?: number;
+}): Promise<{ data: AdminSellerPayout[]; meta: PaginatedMeta }> {
+  return apiFetch(`/v1/admin/payouts${toQueryString(params ?? {})}`);
+}
+
+export async function approveAdminPayout(id: number): Promise<string> {
+  const envelope = await apiFetch<ApiEnvelope<{ message: string }>>(
+    `/v1/admin/payouts/${id}/approve`,
+    { method: "POST" },
+  );
+  return envelope.message ?? "Retrait approuvé.";
+}
+
+export async function payAdminPayout(
+  id: number,
+  reference?: string,
+): Promise<string> {
+  const envelope = await apiFetch<ApiEnvelope<{ message: string }>>(
+    `/v1/admin/payouts/${id}/pay`,
+    { method: "POST", body: JSON.stringify({ reference }) },
+  );
+  return envelope.message ?? "Retrait marqué payé.";
+}
+
+export async function rejectAdminPayout(
+  id: number,
+  reason?: string,
+): Promise<string> {
+  const envelope = await apiFetch<ApiEnvelope<{ message: string }>>(
+    `/v1/admin/payouts/${id}/reject`,
+    { method: "POST", body: JSON.stringify({ reason }) },
+  );
+  return envelope.message ?? "Retrait rejeté.";
 }
 
 export async function getAdminProducts(params?: {

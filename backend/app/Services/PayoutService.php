@@ -8,6 +8,7 @@ use App\Models\Seller;
 use App\Models\SellerBalance;
 use App\Models\SellerPayout;
 use App\Models\SellerTransaction;
+use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
 
@@ -108,5 +109,121 @@ class PayoutService
             'date' => now()->addDays($days)->startOfDay()->toIso8601String(),
             'amount_minor' => (int) ($balance?->amount_pending ?? 0),
         ];
+    }
+
+    // ── Supervision (administration) ────────────────────────────────────
+
+    /**
+     * Approuver un retrait : il est ensuite payé effectivement ou rejeté.
+     *
+     * @throws RuntimeException si le retrait n'est pas en attente
+     */
+    public function approve(SellerPayout $payout, User $by): SellerPayout
+    {
+        if ($payout->status !== 'requested') {
+            throw new RuntimeException('Seul un retrait en attente peut être approuvé.');
+        }
+
+        $payout->forceFill([
+            'status' => 'approved',
+            'processed_by' => $by->id,
+        ])->save();
+
+        AuditService::log(AuditEvent::PayoutApproved, $payout, ['by' => $by->email]);
+
+        return $payout;
+    }
+
+    /**
+     * Marquer un retrait approuvé comme payé.
+     *
+     * @throws RuntimeException si le retrait n'est pas approuvé
+     */
+    public function markPaid(SellerPayout $payout, User $by, ?string $reference = null): SellerPayout
+    {
+        if ($payout->status !== 'approved') {
+            throw new RuntimeException('Un retrait doit être approuvé avant d\'être payé.');
+        }
+
+        $payout->forceFill([
+            'status' => 'paid',
+            'processed_at' => now(),
+            'processed_by' => $by->id,
+            'transaction_id' => $reference ?? null,
+        ])->save();
+
+        Notification::create([
+            'user_id' => $payout->seller->user_id,
+            'type' => 'payout.paid',
+            'title' => 'Retrait payé',
+            'message' => 'Votre retrait de '.number_format($payout->amount_minor).' '.$payout->currency.' a été envoyé ('.strtoupper($payout->method).').',
+            'data' => ['payout_id' => $payout->id],
+            'action_url' => '/seller/finances',
+            'action_text' => 'Voir mes versements',
+            'priority' => 'high',
+        ]);
+
+        AuditService::log(AuditEvent::PayoutPaid, $payout, ['by' => $by->email, 'reference' => $reference]);
+
+        return $payout;
+    }
+
+    /**
+     * Rejeter un retrait en attente : le montant est recrédité sur le solde
+     * disponible et une transaction de crédit est enregistrée.
+     *
+     * @throws RuntimeException si le retrait n'est pas en attente
+     */
+    public function reject(SellerPayout $payout, User $by, ?string $reason = null): SellerPayout
+    {
+        if ($payout->status !== 'requested') {
+            throw new RuntimeException('Seul un retrait en attente peut être rejeté.');
+        }
+
+        DB::transaction(function () use ($payout, $by, $reason) {
+            $balance = $payout->balance
+                ?? $payout->seller->balance()->firstOrCreate(['currency' => $payout->currency]);
+
+            $balance->increment('amount_available', $payout->amount_minor);
+
+            $payout->forceFill([
+                'status' => 'rejected',
+                'processed_at' => now(),
+                'processed_by' => $by->id,
+                'notes' => $reason ?? null,
+            ])->save();
+
+            SellerTransaction::create([
+                'seller_id' => $payout->seller_id,
+                'type' => 'payout_reversal',
+                'direction' => 'in',
+                'amount_minor' => $payout->amount_minor,
+                'currency' => $payout->currency,
+                'commission_minor' => 0,
+                'fee_minor' => 0,
+                'net_minor' => $payout->amount_minor,
+                'payout_id' => $payout->id,
+                'description' => $reason
+                    ? 'Retrait rejeté : '.$reason
+                    : 'Retrait rejeté, montant recrédité',
+            ]);
+        });
+
+        Notification::create([
+            'user_id' => $payout->seller->user_id,
+            'type' => 'payout.rejected',
+            'title' => 'Retrait rejeté',
+            'message' => $reason
+                ? 'Votre retrait de '.number_format($payout->amount_minor).' '.$payout->currency.' a été rejeté : '.$reason
+                : 'Votre retrait de '.number_format($payout->amount_minor).' '.$payout->currency.' a été rejeté.',
+            'data' => ['payout_id' => $payout->id],
+            'action_url' => '/seller/finances',
+            'action_text' => 'Voir mes versements',
+            'priority' => 'high',
+        ]);
+
+        AuditService::log(AuditEvent::PayoutRejected, $payout, ['by' => $by->email, 'reason' => $reason]);
+
+        return $payout;
     }
 }

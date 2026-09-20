@@ -15,6 +15,7 @@ import {
   Eye,
   MousePointerClick,
   Shield,
+  Reply,
   Loader2,
   LogIn,
 } from "lucide-react";
@@ -229,7 +230,7 @@ export default function SellerPage() {
         </div>
       </div>
 
-      <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         <Link href="/seller/shop" className="rounded-2xl border border-gray-200 bg-white p-5 hover:shadow-md transition-all">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-700">
@@ -271,6 +272,17 @@ export default function SellerPage() {
             <div>
               <p className="text-sm font-semibold text-gray-900">Finances</p>
               <p className="text-xs text-gray-600">Comptes et retraits</p>
+            </div>
+          </div>
+        </Link>
+        <Link href="/seller/reviews" className="rounded-2xl border border-gray-200 bg-white p-5 hover:shadow-md transition-all">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-50 text-amber-700">
+              <Reply className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-gray-900">Avis clients</p>
+              <p className="text-xs text-gray-600">Répondre aux avis</p>
             </div>
           </div>
         </Link>

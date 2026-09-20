@@ -45,6 +45,10 @@ enum AuditEvent: string
     case AffiliatePayoutApproved = 'affiliate.payout.approved';
     case AffiliatePayoutPaid = 'affiliate.payout.paid';
     case AffiliatePayoutRejected = 'affiliate.payout.rejected';
+    case PayoutApproved = 'payout.approved';
+    case PayoutPaid = 'payout.paid';
+    case PayoutRejected = 'payout.rejected';
+    case DisputeResolved = 'dispute.resolved';
 
     public function label(): string
     {
@@ -85,6 +89,10 @@ enum AuditEvent: string
             self::AffiliatePayoutApproved => 'Retrait influenceur approuvé',
             self::AffiliatePayoutPaid => 'Retrait influenceur payé',
             self::AffiliatePayoutRejected => 'Retrait influenceur rejeté',
+            self::PayoutApproved => 'Retrait vendeur approuvé',
+            self::PayoutPaid => 'Retrait vendeur payé',
+            self::PayoutRejected => 'Retrait vendeur rejeté',
+            self::DisputeResolved => 'Litige résolu',
         };
     }
 }

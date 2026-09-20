@@ -116,6 +116,7 @@ return [
         'promocodes.manage' => 'Gérer les codes promo',
         'banners.manage' => 'Gérer les bannières',
         'affiliates.manage' => 'Gérer les influenceurs',
+        'payouts.manage' => 'Superviser les versements vendeurs',
         'finances.view' => 'Consulter les finances locales',
     ],
 

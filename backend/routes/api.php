@@ -269,6 +269,14 @@ Route::prefix('v1')->group(function () {
 
             Route::delete('/products/{product}', [App\Http\Controllers\Api\V1\Seller\SellerProductController::class, 'destroy'])
                 ->name('api.v1.seller.products.destroy');
+
+            // Avis clients sur mes produits + réponses publiques.
+            Route::get('/reviews', [App\Http\Controllers\Api\V1\Seller\SellerReviewController::class, 'index'])
+                ->name('api.v1.seller.reviews.index');
+
+            Route::post('/reviews/{review}/reply', [App\Http\Controllers\Api\V1\Seller\SellerReviewController::class, 'reply'])
+                ->middleware('can:reviews.reply')
+                ->name('api.v1.seller.reviews.reply');
         });
 
         // Boutique : point de vue vendeur + comptage des partages.
@@ -487,6 +495,33 @@ Route::prefix('v1')->group(function () {
             Route::post('/affiliate-payouts/{payout}/reject', [App\Http\Controllers\Api\V1\Admin\AdminAffiliateController::class, 'rejectPayout'])
                 ->middleware('can:affiliates.manage')
                 ->name('api.v1.admin.affiliate-payouts.reject');
+
+            // Médiation des litiges (modérateur et admin).
+            Route::get('/disputes', [App\Http\Controllers\Api\V1\Admin\AdminDisputeController::class, 'index'])
+                ->name('api.v1.admin.disputes.index');
+
+            Route::get('/disputes/{dispute}', [App\Http\Controllers\Api\V1\Admin\AdminDisputeController::class, 'show'])
+                ->name('api.v1.admin.disputes.show');
+
+            Route::post('/disputes/{dispute}/resolve', [App\Http\Controllers\Api\V1\Admin\AdminDisputeController::class, 'resolve'])
+                ->middleware('can:moderation.disputes')
+                ->name('api.v1.admin.disputes.resolve');
+
+            // Supervision des versements vendeurs (administration).
+            Route::get('/payouts', [App\Http\Controllers\Api\V1\Admin\AdminSellerPayoutController::class, 'index'])
+                ->name('api.v1.admin.payouts.index');
+
+            Route::post('/payouts/{payout}/approve', [App\Http\Controllers\Api\V1\Admin\AdminSellerPayoutController::class, 'approve'])
+                ->middleware('can:payouts.manage')
+                ->name('api.v1.admin.payouts.approve');
+
+            Route::post('/payouts/{payout}/pay', [App\Http\Controllers\Api\V1\Admin\AdminSellerPayoutController::class, 'pay'])
+                ->middleware('can:payouts.manage')
+                ->name('api.v1.admin.payouts.pay');
+
+            Route::post('/payouts/{payout}/reject', [App\Http\Controllers\Api\V1\Admin\AdminSellerPayoutController::class, 'reject'])
+                ->middleware('can:payouts.manage')
+                ->name('api.v1.admin.payouts.reject');
         });
 
     });

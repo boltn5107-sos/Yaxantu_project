@@ -26,7 +26,8 @@ class ReviewController extends Controller
         return ReviewResource::collection(
             $product->reviews()
                 ->where('status', ReviewStatus::Approved->value)
-                ->with('user')
+                ->whereNull('parent_id')
+                ->with(['user', 'replies.user'])
                 ->orderByDesc('created_at')
                 ->paginate(10),
         );

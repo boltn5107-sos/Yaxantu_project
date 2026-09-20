@@ -568,6 +568,31 @@ export default function ProductPage({
                             })
                           : ""}
                       </p>
+                      {review.reply?.content && (
+                        <div className="mt-3 rounded-lg bg-gray-50 p-3">
+                          <div className="flex items-center gap-2 text-xs font-semibold text-gray-700">
+                            <Store className="h-3.5 w-3.5" />
+                            Réponse du vendeur
+                            {review.reply.author ? (
+                              <span className="font-normal text-gray-400">
+                                · {review.reply.author}
+                              </span>
+                            ) : null}
+                          </div>
+                          <p className="mt-1 text-sm text-gray-600">
+                            {review.reply.content}
+                          </p>
+                          {review.reply.created_at ? (
+                            <p className="mt-1 text-xs text-gray-400">
+                              {new Date(review.reply.created_at).toLocaleDateString("fr-FR", {
+                                day: "numeric",
+                                month: "long",
+                                year: "numeric",
+                              })}
+                            </p>
+                          ) : null}
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>

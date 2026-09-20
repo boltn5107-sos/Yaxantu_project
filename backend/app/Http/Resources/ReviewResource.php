@@ -11,6 +11,8 @@ class ReviewResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
+        $reply = $this->replies->first();
+
         return [
             'id' => $this->id,
             'rating' => (int) $this->rating,
@@ -20,6 +22,14 @@ class ReviewResource extends JsonResource
             'author' => $this->user?->name ?? 'Utilisateur Yaxantu',
             'is_verified_purchase' => (bool) $this->is_verified_purchase,
             'created_at' => $this->created_at?->toIso8601String(),
+            // Réponse publique du vendeur (parent_id renseigné).
+            'reply' => $reply && $reply->content
+                ? [
+                    'content' => $reply->content,
+                    'author' => $reply->user?->name ?? '',
+                    'created_at' => $reply->created_at?->toIso8601String(),
+                ]
+                : null,
         ];
     }
 }
