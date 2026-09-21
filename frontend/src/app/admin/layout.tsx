@@ -16,6 +16,7 @@ import {
   Megaphone,
   Scale,
   Wallet,
+  BookOpen,
   Loader2,
   ArrowLeft,
 } from "lucide-react";
@@ -34,6 +35,7 @@ const links = [
   { href: "/admin/affiliates", label: "Influenceurs", icon: Megaphone },
   { href: "/admin/disputes", label: "Litiges", icon: Scale },
   { href: "/admin/payouts", label: "Versements", icon: Wallet },
+  { href: "/admin/docs", label: "Documentation", icon: BookOpen },
 ] as const;
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {

@@ -15,7 +15,7 @@ class AdminCourierController extends Controller
     public function index(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'status' => ['nullable', 'in:pending,approved,rejected'],
+            'status' => ['nullable', 'in:pending,approved,rejected,suspended'],
             'page' => ['nullable', 'integer', 'min:1'],
         ]);
 

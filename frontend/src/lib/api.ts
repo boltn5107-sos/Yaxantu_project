@@ -3,6 +3,16 @@ export const API_URL =
 
 export const API_ROOT = API_URL.replace(/\/api\/?$/, "");
 
+/** Résout un chemin stocké (ex. « banners/x.jpg ») en URL publique de
+ * l'API ; une URL complète (http/https/data:) est renvoyée telle quelle. */
+export function mediaUrl(path?: string | null): string | null {
+  if (!path) return null;
+  if (path.startsWith("http://") || path.startsWith("https://") || path.startsWith("data:")) {
+    return path;
+  }
+  return `${API_ROOT}/storage/${path.replace(/^\/+/, "")}`;
+}
+
 // ── Enveloppes API -----------------------------------------------------
 
 export type ApiEnvelope<T> = {
@@ -1664,10 +1674,24 @@ export type AdminSeller = {
   verification_level: number;
   verified_at: string | null;
   trust_score: number;
+  commission_override_bps: number | null;
+  currency: string | null;
   products_count: number;
   orders_count: number;
   owner: { name: string; email: string | null; phone: string | null } | null;
   created_at: string | null;
+};
+
+export type AdminCourierPending = {
+  id: number;
+  name: string | null;
+  phone: string | null;
+  transport_type: string | null;
+  zone_address: string | null;
+  identity_photo: string | null;
+  selfie: string | null;
+  payout_method: string | null;
+  submitted_at: string | null;
 };
 
 export type AdminCourier = {
@@ -1687,6 +1711,7 @@ export type AdminBanner = {
   id: number;
   title: string;
   subtitle: string | null;
+  image_url: string | null;
   image: string | null;
   link: string | null;
   sort_order: number;
@@ -2208,12 +2233,31 @@ export async function getAdminSellers(params?: {
   return apiFetch(`/v1/admin/sellers${toQueryString(params ?? {})}`);
 }
 
-export async function verifyAdminSeller(sellerId: number): Promise<string> {
+export async function verifyAdminSeller(
+  sellerId: number,
+  verificationLevel = 2,
+): Promise<string> {
   const envelope = await apiFetch<ApiEnvelope<{ message: string }>>(
     `/v1/admin/sellers/${sellerId}/verify`,
-    { method: "POST" },
+    { method: "POST", body: JSON.stringify({ verification_level: verificationLevel }) },
   );
   return envelope.message ?? "Boutique vérifiée.";
+}
+
+export async function updateAdminSeller(
+  sellerId: number,
+  input: {
+    status?: "active" | "suspended" | "closed";
+    verification_level?: number;
+    trust_score?: number;
+    commission_override_bps?: number | null;
+  },
+): Promise<string> {
+  const envelope = await apiFetch<ApiEnvelope<{ message: string }>>(
+    `/v1/admin/sellers/${sellerId}`,
+    { method: "PATCH", body: JSON.stringify(input) },
+  );
+  return envelope.message ?? "Boutique mise à jour.";
 }
 
 export async function rejectAdminSeller(
@@ -2234,13 +2278,27 @@ export async function getAdminCouriers(params?: {
   return apiFetch(`/v1/admin/couriers${toQueryString(params ?? {})}`);
 }
 
-export async function getAdminCouriersPending(): Promise<
-  { id: number; name: string | null; phone: string | null }[]
-> {
-  const envelope = await apiFetch<
-    ApiEnvelope<{ id: number; name: string | null; phone: string | null }[]>
-  >("/v1/admin/couriers/pending");
+export async function getAdminCouriersPending(): Promise<AdminCourierPending[]> {
+  const envelope = await apiFetch<ApiEnvelope<AdminCourierPending[]>>(
+    "/v1/admin/couriers/pending",
+  );
   return envelope.data;
+}
+
+export async function suspendAdminCourier(courierId: number): Promise<string> {
+  const envelope = await apiFetch<ApiEnvelope<{ message: string }>>(
+    `/v1/admin/couriers/${courierId}/suspend`,
+    { method: "POST" },
+  );
+  return envelope.message ?? "Livreur suspendu.";
+}
+
+export async function reactivateAdminCourier(courierId: number): Promise<string> {
+  const envelope = await apiFetch<ApiEnvelope<{ message: string }>>(
+    `/v1/admin/couriers/${courierId}/reactivate`,
+    { method: "POST" },
+  );
+  return envelope.message ?? "Livreur réactivé.";
 }
 
 export async function approveAdminCourier(courierId: number): Promise<string> {
@@ -2267,35 +2325,54 @@ export async function getAdminBanners(): Promise<AdminBanner[]> {
   return envelope.data;
 }
 
-export async function createAdminBanner(input: {
+export type BannerInput = {
   title: string;
   subtitle?: string;
-  image_url: string;
+  /** URL d'image OU fichier photo (au moins l'un des deux). */
+  image_url?: string;
+  image?: File;
   link?: string;
   sort_order?: number;
   is_active?: boolean;
-}): Promise<string> {
+};
+
+function bannerBody(input: BannerInput): FormData | string {
+  const payload: Record<string, unknown> = {
+    title: input.title,
+    subtitle: input.subtitle,
+    link: input.link,
+    sort_order: input.sort_order,
+    is_active: input.is_active,
+  };
+  if (input.image) {
+    const form = new FormData();
+    Object.entries(payload).forEach(([key, value]) => {
+      if (value !== undefined) form.append(key, String(value));
+    });
+    form.append("image", input.image);
+    return form;
+  }
+  if (input.image_url !== undefined && input.image_url !== "") {
+    payload.image_url = input.image_url;
+  }
+  return JSON.stringify(payload);
+}
+
+export async function createAdminBanner(input: BannerInput): Promise<string> {
   const envelope = await apiFetch<ApiEnvelope<{ message: string }>>(
     "/v1/admin/banners",
-    { method: "POST", body: JSON.stringify(input) },
+    { method: "POST", body: bannerBody(input) },
   );
   return envelope.message ?? "Bannière créée.";
 }
 
 export async function updateAdminBanner(
   bannerId: number,
-  input: {
-    title: string;
-    subtitle?: string;
-    image_url: string;
-    link?: string;
-    sort_order?: number;
-    is_active?: boolean;
-  },
+  input: BannerInput,
 ): Promise<string> {
   const envelope = await apiFetch<ApiEnvelope<{ message: string }>>(
     `/v1/admin/banners/${bannerId}`,
-    { method: "PUT", body: JSON.stringify(input) },
+    { method: "PUT", body: bannerBody(input) },
   );
   return envelope.message ?? "Bannière mise à jour.";
 }

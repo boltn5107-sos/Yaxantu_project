@@ -368,6 +368,12 @@ Route::prefix('v1')->group(function () {
             Route::post('/couriers/{courier}/reject', [App\Http\Controllers\Api\V1\Admin\CourierApprovalController::class, 'reject'])
                 ->name('api.v1.admin.couriers.reject');
 
+            Route::post('/couriers/{courier}/suspend', [App\Http\Controllers\Api\V1\Admin\CourierApprovalController::class, 'suspend'])
+                ->name('api.v1.admin.couriers.suspend');
+
+            Route::post('/couriers/{courier}/reactivate', [App\Http\Controllers\Api\V1\Admin\CourierApprovalController::class, 'reactivate'])
+                ->name('api.v1.admin.couriers.reactivate');
+
             Route::get('/couriers', [App\Http\Controllers\Api\V1\Admin\AdminCourierController::class, 'index'])
                 ->name('api.v1.admin.couriers.index');
 

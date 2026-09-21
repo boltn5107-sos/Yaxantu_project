@@ -52,6 +52,8 @@ class AdminSellerController extends Controller
                 'verification_level' => (int) $seller->verification_level,
                 'verified_at' => $seller->verified_at?->toIso8601String(),
                 'trust_score' => (int) $seller->trust_score,
+                'commission_override_bps' => $seller->commission_override_bps,
+                'currency' => $seller->currency,
                 'products_count' => (int) $seller->products_count,
                 'orders_count' => (int) $seller->orders_count,
                 'owner' => $seller->user ? [
@@ -71,13 +73,20 @@ class AdminSellerController extends Controller
     }
 
     /**
-     * Valider une boutique : passe en « active », niveau de vérification à 2.
+     * Valider une boutique : passe en « active » avec le niveau de
+     * vérification demandé (2 par défaut, 1 = signalétique, 3 = niveau max).
      */
     public function verify(Request $request, Seller $seller): JsonResponse
     {
+        $validated = $request->validate([
+            'verification_level' => ['nullable', 'integer', 'min:1', 'max:3'],
+        ]);
+
+        $level = (int) ($validated['verification_level'] ?? 2);
+
         $seller->update([
             'status' => 'active',
-            'verification_level' => 2,
+            'verification_level' => $level,
             'verified_at' => now(),
         ]);
 
@@ -131,18 +140,60 @@ class AdminSellerController extends Controller
     }
 
     /**
-     * Suspendre / fermer une boutique (action d'administration).
+     * Piloter une boutique : statut (suspendre / réactiver / fermer), note de
+     * confiance, niveau de vérification et commission personnalisée.
      */
     public function update(Request $request, Seller $seller): JsonResponse
     {
         $validated = $request->validate([
-            'status' => ['required', 'in:active,suspended,closed'],
+            'status' => ['sometimes', 'in:active,suspended,closed'],
+            'verification_level' => ['sometimes', 'integer', 'min:0', 'max:3'],
+            'trust_score' => ['sometimes', 'integer', 'min:0', 'max:100'],
+            'commission_override_bps' => ['sometimes', 'nullable', 'integer', 'min:0', 'max:10000'],
         ]);
 
-        $seller->update(['status' => $validated['status']]);
+        $changes = array_filter(
+            $validated,
+            function ($value, $key) use ($validated) {
+                // null explicite = effacer la commission personnalisée.
+                if ($key === 'commission_override_bps') {
+                    return array_key_exists('commission_override_bps', $validated);
+                }
 
-        if ($validated['status'] === 'suspended') {
+                return $value !== null;
+            },
+            ARRAY_FILTER_USE_BOTH,
+        );
+
+        if ($changes === []) {
+            return response()->json(['message' => 'Boutique à jour.']);
+        }
+
+        $seller->update($changes);
+
+        if (($validated['status'] ?? null) === 'suspended') {
+            Notification::create([
+                'user_id' => $seller->user_id,
+                'type' => 'seller.suspended',
+                'title' => 'Boutique suspendue',
+                'message' => 'Votre boutique « '.$seller->shop_name.' » a été suspendue par la plateforme. Contactez le support pour plus de détails.',
+                'data' => [],
+                'action_url' => '/support',
+                'action_text' => 'Aller sur la page d\'aide',
+                'priority' => 'high',
+            ]);
+
             AuditService::log(AuditEvent::SellerSuspended, $seller);
+        }
+
+        if ((($validated['status'] ?? null) === 'active') && $seller->getOriginal('status') === 'suspended') {
+            AuditService::log(AuditEvent::SellerActivated, $seller);
+        }
+
+        if (array_key_exists('trust_score', $validated)) {
+            AuditService::log(AuditEvent::TrustScoreUpdated, $seller, [
+                'trust_score' => $seller->trust_score,
+            ]);
         }
 
         return response()->json(['message' => 'Boutique mise à jour.']);

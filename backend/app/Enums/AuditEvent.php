@@ -20,6 +20,10 @@ enum AuditEvent: string
     case SellerUpdated = 'seller.updated';
     case SellerVerified = 'seller.verified';
     case SellerSuspended = 'seller.suspended';
+    case SellerActivated = 'seller.activated';
+    case TrustScoreUpdated = 'seller.trust_updated';
+    case CourierSuspended = 'courier.suspended';
+    case CourierActivated = 'courier.activated';
     case VerificationSubmitted = 'verification.submitted';
     case VerificationReviewed = 'verification.reviewed';
     case ConfigChanged = 'config.changed';
@@ -64,6 +68,10 @@ enum AuditEvent: string
             self::SellerUpdated => 'Boutique modifiée',
             self::SellerVerified => 'Vendeur vérifié',
             self::SellerSuspended => 'Vendeur suspendu',
+            self::SellerActivated => 'Vendeur réactivé',
+            self::TrustScoreUpdated => 'Note de confiance mise à jour',
+            self::CourierSuspended => 'Livreur suspendu',
+            self::CourierActivated => 'Livreur réactivé',
             self::VerificationSubmitted => 'Dossier de vérification soumis',
             self::VerificationReviewed => 'Dossier de vérification évalué',
             self::ConfigChanged => 'Règle métier modifiée',
