@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Smartphone,
@@ -56,6 +56,12 @@ const profiles: {
 export default function PhoneAuthPage() {
   const router = useRouter();
   const { refresh } = useAuth();
+
+  // Fonctionnalité masquée : la connexion par téléphone est indisponible,
+  // on redirige vers la connexion classique.
+  useEffect(() => {
+    router.replace("/auth/login");
+  }, [router]);
 
   const [step, setStep] = useState<Step>("phone");
   const [phone, setPhone] = useState("");

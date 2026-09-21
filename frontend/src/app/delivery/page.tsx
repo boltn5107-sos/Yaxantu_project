@@ -50,8 +50,25 @@ export default function DeliveryPage() {
   }, []);
 
   useEffect(() => {
-    void load();
-  }, [load]);
+    let cancelled = false;
+    Promise.all([getCourierOnboarding(), getCourierJobs()])
+      .then(([p, j]) => {
+        if (cancelled) return;
+        setProgress(p);
+        setJobs(j);
+        setError(null);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setError(err instanceof Error ? err.message : "Impossible de charger votre espace livreur.");
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const toggleAvailability = async () => {
     if (!progress) return;
@@ -110,7 +127,7 @@ export default function DeliveryPage() {
       <StandaloneNotice
         title="Devenir livreur"
         text="Choisissez le profil Livreur pour recevoir des courses et gagner en livrant."
-        href="/auth/phone"
+        href="/auth/register"
         cta="Commencer"
       />
     );

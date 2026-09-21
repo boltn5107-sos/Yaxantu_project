@@ -82,11 +82,11 @@ export default function SellerPage() {
           Espace vendeur
         </h1>
         <p className="mt-2 text-gray-600">
-          Connectez-vous avec votre téléphone pour créer votre boutique et
+          Connectez-vous pour créer votre boutique et
           vendre sur Yaxantu.
         </p>
         <Link
-          href="/auth/phone?mode=login"
+          href="/auth/login"
           className="mt-6 inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-700"
         >
           <LogIn className="h-4 w-4" />

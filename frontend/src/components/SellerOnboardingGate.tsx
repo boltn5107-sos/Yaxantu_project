@@ -35,7 +35,7 @@ export default function SellerOnboardingGate({
           Connectez-vous pour consulter vos ventes.
         </p>
         <Link
-          href="/auth/phone"
+          href="/auth/login"
           className="mt-6 inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-700"
         >
           <LogIn className="h-4 w-4" />

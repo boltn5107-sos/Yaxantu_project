@@ -132,20 +132,6 @@ function LoginContent() {
               S&apos;inscrire
             </Link>
           </p>
-
-          <div className="my-6 flex items-center gap-3 text-xs text-gray-400">
-            <div className="h-px flex-1 bg-gray-200" />
-            ou
-            <div className="h-px flex-1 bg-gray-200" />
-          </div>
-
-          <Link href="/auth/phone?mode=login" className="flex w-full items-center justify-center gap-3 rounded-xl border border-gray-300 px-4 py-3 text-sm font-semibold text-gray-800 hover:bg-gray-50 transition-colors">
-            <svg viewBox="0 0 24 24" className="h-5 w-5 text-gray-600" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M22 2 11 13" />
-              <path d="M22 2l-7 20-4-9-9-4 20-7z" />
-            </svg>
-            Se connecter avec le téléphone
-          </Link>
         </div>
       </div>
     </div>
