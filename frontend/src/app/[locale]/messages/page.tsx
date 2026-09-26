@@ -9,6 +9,7 @@ import {
   mediaUrl,
   type ConversationSummary,
 } from "@/lib/api";
+import { translateMessage } from "@/lib/glossary";
 
 export default function MessagesPage() {
   const t = useTranslations("messages");
@@ -109,8 +110,13 @@ export default function MessagesPage() {
                       ? conversation.last_message.kind === "voice"
                         ? t("voiceNote")
                         : conversation.last_message.from_me
-                          ? t("youPrefix", { text: conversation.last_message.text ?? "" })
-                          : conversation.last_message.text ?? ""
+                          ? t("youPrefix", {
+                              text: conversation.last_message.text ?? "",
+                            })
+                          : (() => {
+                              const text = conversation.last_message.text ?? "";
+                              return translateMessage(text, locale)?.translated ?? text;
+                            })()
                       : t("newConversation")}
                   </p>
                   {conversation.unread_count > 0 && (

@@ -10,6 +10,7 @@ import {
   Loader2,
   Rocket,
   ImagePlus,
+  Video,
   X,
   ChevronLeft,
 } from "lucide-react";
@@ -51,7 +52,8 @@ export default function NewProductPage({
   const [previews, setPreviews] = useState<Preview[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const fileRef = useRef<HTMLInputElement>(null);
+  const imageRef = useRef<HTMLInputElement>(null);
+  const videoRef = useRef<HTMLInputElement>(null);
 
   // Précharge la catégorie choisie à la création de la boutique, tant que le
   // vendeur n'en a pas sélectionné une autre manuellement.
@@ -104,6 +106,11 @@ export default function NewProductPage({
   const removeImage = (index: number) => {
     URL.revokeObjectURL(previews[index].url);
     setPreviews(previews.filter((_, i) => i !== index));
+  };
+
+  const handleFiles = (e: React.ChangeEvent<HTMLInputElement>) => {
+    pickImages(e.target.files);
+    e.target.value = "";
   };
 
   const submit = async () => {
@@ -260,25 +267,40 @@ export default function NewProductPage({
           <label className="block text-sm font-semibold text-gray-900">
             {t("products.form.mediaLabel")}
           </label>
+          <div className="mt-2 flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => imageRef.current?.click()}
+              className="inline-flex items-center gap-2 rounded-xl border border-dashed border-gray-300 px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+            >
+              <ImagePlus className="h-4 w-4" />
+              {t("products.form.chooseMedia")}
+            </button>
+            <button
+              type="button"
+              onClick={() => videoRef.current?.click()}
+              className="inline-flex items-center gap-2 rounded-xl border border-dashed border-gray-300 px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+            >
+              <Video className="h-4 w-4" />
+              {t("products.form.chooseVideo")}
+            </button>
+          </div>
           <input
-            ref={fileRef}
+            ref={imageRef}
             type="file"
-            accept="image/*,video/*"
+            accept="image/*"
             multiple
             className="hidden"
-            onChange={(e) => {
-              pickImages(e.target.files);
-              e.target.value = "";
-            }}
+            onChange={handleFiles}
           />
-          <button
-            type="button"
-            onClick={() => fileRef.current?.click()}
-            className="mt-2 inline-flex items-center gap-2 rounded-xl border border-dashed border-gray-300 px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50"
-          >
-            <ImagePlus className="h-4 w-4" />
-            {t("products.form.chooseMedia")}
-          </button>
+          <input
+            ref={videoRef}
+            type="file"
+            accept="video/*"
+            multiple
+            className="hidden"
+            onChange={handleFiles}
+          />
           <p className="mt-1 text-xs text-gray-500">
             {t("products.form.videoHint")}
           </p>

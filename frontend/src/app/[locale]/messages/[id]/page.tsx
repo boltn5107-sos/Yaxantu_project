@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import {
   ChevronLeft,
   Loader2,
@@ -20,11 +20,13 @@ import {
   type ChatMessage as ChatMessageType,
   type ConversationThread,
 } from "@/lib/api";
+import { translateMessage } from "@/lib/glossary";
 
 export default function ConversationPage() {
   const params = useParams<{ id: string }>();
   const t = useTranslations("messages");
   const tc = useTranslations("chat");
+  const locale = useLocale();
   const conversationId = Number(params.id);
 
   const [thread, setThread] = useState<ConversationThread | null>(null);
@@ -36,6 +38,8 @@ export default function ConversationPage() {
   const [recording, setRecording] = useState(false);
   const [chunks, setChunks] = useState<Blob[]>([]);
   const recRef = useRef<MediaRecorder | null>(null);
+
+  const [showOriginal, setShowOriginal] = useState<Set<number>>(new Set());
 
   const listRef = useRef<HTMLDivElement>(null);
 
@@ -66,7 +70,7 @@ export default function ConversationPage() {
       cancelled = true;
       window.clearInterval(timer);
     };
-  }, [conversationId]);
+  }, [conversationId, t]);
 
   useEffect(() => {
     scrollBottom();
@@ -223,26 +227,35 @@ export default function ConversationPage() {
               {t("sayHello")}
             </div>
           )}
-          {thread.messages.map((message) =>
-            message.kind === "voice" ? (
-              <div
-                key={message.id}
-                className={`max-w-[85%] rounded-2xl px-3 py-2 ${
-                  message.from_me
-                    ? "self-end rounded-br-md bg-emerald-600"
-                    : "self-start rounded-bl-md bg-white border border-gray-200"
-                }`}
-              >
-                {message.voice && (
-                  <audio
-                    controls
-                    src={message.voice}
-                    className="h-9 w-56 max-w-full"
-                    preload="metadata"
-                  />
-                )}
-              </div>
-            ) : (
+          {thread.messages.map((message) => {
+            if (message.kind === "voice") {
+              return (
+                <div
+                  key={message.id}
+                  className={`max-w-[85%] rounded-2xl px-3 py-2 ${
+                    message.from_me
+                      ? "self-end rounded-br-md bg-emerald-600"
+                      : "self-start rounded-bl-md bg-white border border-gray-200"
+                  }`}
+                >
+                  {message.voice && (
+                    <audio
+                      controls
+                      src={message.voice}
+                      className="h-9 w-56 max-w-full"
+                      preload="metadata"
+                    />
+                  )}
+                </div>
+              );
+            }
+            if (!message.text) return null;
+            const tr = !message.from_me
+              ? translateMessage(message.text, locale)
+              : null;
+            const showOrig = showOriginal.has(message.id);
+            const display = tr && !showOrig ? tr.translated : message.text;
+            return (
               <div
                 key={message.id}
                 className={`max-w-[85%] rounded-2xl px-3.5 py-2 text-sm leading-relaxed ${
@@ -251,10 +264,29 @@ export default function ConversationPage() {
                     : "self-start rounded-bl-md bg-white text-gray-800 border border-gray-200"
                 }`}
               >
-                {message.text}
+                {display}
+                {tr && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setShowOriginal((prev) => {
+                        const next = new Set(prev);
+                        if (next.has(message.id)) {
+                          next.delete(message.id);
+                        } else {
+                          next.add(message.id);
+                        }
+                        return next;
+                      })
+                    }
+                    className="mt-1 block text-[10px] font-medium underline opacity-70 hover:opacity-100"
+                  >
+                    {showOrig ? t("translated") : t("original")}
+                  </button>
+                )}
               </div>
-            ),
-          )}
+            );
+          })}
         </div>
 
         {/* Saisie */}
