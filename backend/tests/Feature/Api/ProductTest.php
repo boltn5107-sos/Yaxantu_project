@@ -140,7 +140,7 @@ class ProductTest extends TestCase
             ->assertJsonPath('data.price', 32000)
             ->assertJsonPath('data.seller.verified', true)
             ->assertJsonCount(1, 'data.images')
-            ->assertJsonPath('data.thumbnail', 'http://localhost/storage/images/products/test.jpg');
+            ->assertJsonPath('data.thumbnail', 'http://localhost:8000/storage/images/products/test.jpg');
     }
 
     public function test_show_hides_inactive_product(): void

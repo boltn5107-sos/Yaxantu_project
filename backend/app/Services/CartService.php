@@ -204,29 +204,19 @@ class CartService
 
     /**
      * Recalcule les totaux du panier depuis les articles.
+     *
+     * Les frais de livraison ne sont volontairement pas calculés ici : ils
+     * dépendent de la position du client et sont estimés au checkout
+     * (DeliveryFareService) en fonction de la distance boutique → adresse.
      */
     public function refresh(Cart $cart): Cart
     {
         $cart->load('items');
         $cart->forceFill([
             'total_minor' => $cart->items->sum(fn ($item) => $item->total_minor),
-            'shipping_rate_minor' => $this->estimateShipping($cart),
         ])->save();
 
         return $cart;
-    }
-
-    private function estimateShipping(Cart $cart): int
-    {
-        $items = $cart->items->filter(fn ($item) => $item->requires_shipping);
-
-        if ($items->isEmpty()) {
-            return 0;
-        }
-
-        $subtotal = $items->sum(fn ($item) => $item->total_minor);
-
-        return $subtotal >= 25000 ? 0 : 2000;
     }
 
     private function addExisting(Cart $cart, int $productId, int $quantity): void

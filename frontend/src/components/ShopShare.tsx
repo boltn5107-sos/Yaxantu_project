@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import {
   Copy,
   Check,
@@ -44,10 +45,6 @@ const brandIcons: Record<ChannelIcon, typeof Send> = {
   sms: Smartphone,
 };
 
-export function buildShareMessage(shopName: string, link: string): string {
-  return `Découvrez ma boutique ${shopName} sur Yaxantu : ${link}`;
-}
-
 export default function ShopShare({
   shopName,
   link,
@@ -58,7 +55,8 @@ export default function ShopShare({
   onShare?: (channel: string) => void;
 }) {
   const [copied, setCopied] = useState(false);
-  const message = buildShareMessage(shopName, link);
+  const t = useTranslations("share");
+  const message = t("message", { shopName, link });
   const enc = encodeURIComponent;
 
   const copyLink = async () => {
@@ -136,20 +134,19 @@ export default function ShopShare({
           {copied ? (
             <>
               <Check className="h-4 w-4 text-emerald-600" />
-              Copié !
+              {t("copied")}
             </>
           ) : (
             <>
               <Copy className="h-4 w-4" />
-              Copier le lien
+              {t("copyLink")}
             </>
           )}
         </button>
       </div>
       <p className="mt-3 flex items-start gap-1.5 text-xs text-gray-500">
         <Share2 className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-        Votre boutique est publique : toute personne qui ouvre ce lien est
-        comptée comme visite.
+        {t("publicNote")}
       </p>
     </div>
   );

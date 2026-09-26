@@ -9,12 +9,15 @@ use Illuminate\Support\Facades\Cache;
  * Règles de commerce configurables (commissions, frais, limites, promotion).
  *
  * Les valeurs sont stockées en base (table business_configs) et mises en cache
- * pour le cycle de vie d'une requête. Aucune règle économique ne doit être
- * codée en dur ailleurs dans le code.
+ * quelques minutes. Toute modification écrite via set() purge immédiatement le
+ * cache → l'admin voit l'effet sans attendre le TTL. Aucune règle économique ne
+ * doit être codée en dur ailleurs dans le code.
  */
 class ConfigService
 {
     public const CACHE_KEY = 'yaxantu.business_config';
+
+    public const CACHE_TTL_MINUTES = 5;
 
     private array $rows = [];
 
@@ -31,11 +34,11 @@ class ConfigService
             return $this->rows;
         }
 
-        $this->rows = Cache::rememberForever(self::CACHE_KEY, function () {
-            $rows = BusinessConfig::pluck('value', 'key')->all();
-
-            return array_map(fn ($value) => $value[0] ?? null, $rows);
-        });
+        $this->rows = Cache::remember(
+            self::CACHE_KEY,
+            now()->addMinutes(self::CACHE_TTL_MINUTES),
+            fn () => BusinessConfig::pluck('value', 'key')->all(),
+        );
 
         $this->loaded = true;
 
@@ -87,6 +90,12 @@ class ConfigService
         return $this->int('commission.default_rate_bps', 100);
     }
 
+    /** Sous-total à partir duquel la livraison est offerte. */
+    public function deliveryFreeThresholdMinor(): int
+    {
+        return $this->int('delivery.free_threshold_minor', 25000);
+    }
+
     public function payoutMinimum(): int
     {
         return $this->int('payout.min_amount_minor', 1000);
@@ -95,6 +104,18 @@ class ConfigService
     public function orderPaymentTimeoutMinutes(): int
     {
         return $this->int('order.payment_timeout_minutes', 30);
+    }
+
+    /** Active ou masque le paiement à la livraison (COD). */
+    public function codEnabled(): bool
+    {
+        return $this->bool('payments.cod_enabled', true);
+    }
+
+    /** Active ou masque l'utilisation des codes promo au moment du paiement. */
+    public function promoCodesEnabled(): bool
+    {
+        return $this->bool('marketing.promo_codes_enabled', true);
     }
 
     // ── Programme influenceurs ─────────────────────────────────────────

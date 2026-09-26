@@ -71,9 +71,10 @@ class MarketingTest extends TestCase
                 'state_province' => 'Littoral',
                 'country_code' => 'CM',
                 'phone' => '691234567',
+                'latitude' => 4.0511,
+                'longitude' => 9.7679,
             ],
             'payment_method' => 'cod',
-            'shipping_approved' => true,
         ];
     }
 
@@ -108,18 +109,19 @@ class MarketingTest extends TestCase
         $response = $this->actingAs($user, 'sanctum')
             ->postJson('/api/v1/checkout', array_merge($this->addressPayload(), [
                 'promo_code' => 'LAUNCH2026',
+                'shipping_approved' => true,
             ]));
 
         $response->assertCreated()
             ->assertJsonPath('data.0.subtotal', 10000)
             ->assertJsonPath('data.0.discount', 1000)
-            ->assertJsonPath('data.0.shipping', 2000)
-            ->assertJsonPath('data.0.total', 11000);
+            ->assertJsonPath('data.0.shipping', 1000)
+            ->assertJsonPath('data.0.total', 10000);
 
         $this->assertDatabaseHas('orders', [
             'user_id' => $user->id,
             'discount_minor' => 1000,
-            'total_minor' => 11000,
+            'total_minor' => 10000,
             'promo_code_id' => PromoCode::where('code', 'LAUNCH2026')->first()->id,
         ]);
 
@@ -195,9 +197,9 @@ class MarketingTest extends TestCase
         $this->actingAs($filleul, 'sanctum')
             ->postJson('/api/v1/cart/items', ['product_id' => $product->id, 'quantity' => 1]);
 
-        $this->actingAs($filleul, 'sanctum')
-            ->postJson('/api/v1/checkout', $this->addressPayload())
-            ->assertCreated();
+        $response = $this->actingAs($filleul, 'sanctum')
+            ->postJson('/api/v1/checkout', array_merge($this->addressPayload(), ['shipping_approved' => true]));
+        $response->assertCreated();
 
         $this->assertDatabaseHas('referrals', [
             'referrer_id' => $sponsor->id,

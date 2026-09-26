@@ -19,7 +19,7 @@ class ReviewResource extends JsonResource
             'title' => $this->title,
             'content' => $this->content,
             'status' => $this->status,
-            'author' => $this->user?->name ?? 'Utilisateur Yaxantu',
+            'author' => $this->user?->name ?? 'Utilisateur Taaba-taaba',
             'is_verified_purchase' => (bool) $this->is_verified_purchase,
             'created_at' => $this->created_at?->toIso8601String(),
             // Réponse publique du vendeur (parent_id renseigné).

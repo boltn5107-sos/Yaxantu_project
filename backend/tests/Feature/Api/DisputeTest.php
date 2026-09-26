@@ -47,7 +47,7 @@ class DisputeTest extends TestCase
             ->postJson('/api/v1/cart/items', ['product_id' => $product->id, 'quantity' => 1]);
         $this->actingAs($buyer, 'sanctum')
             ->postJson('/api/v1/checkout', [
-                'address' => ['address_line1' => 'Rue 1', 'city' => 'Bafoussam'],
+                'address' => ['address_line1' => 'Rue 1', 'city' => 'Bafoussam', 'latitude' => 5.1478, 'longitude' => 10.4171],
                 'payment_method' => 'cod',
                 'shipping_approved' => true,
             ]);

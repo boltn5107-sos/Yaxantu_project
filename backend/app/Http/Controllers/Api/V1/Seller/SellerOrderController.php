@@ -83,7 +83,7 @@ class SellerOrderController extends Controller
                     'status' => $order->delivery->status,
                     'tracking_number' => $order->tracking_number,
                     'assigned_at' => $order->delivery->assigned_at?->toIso8601String(),
-                    'estimate' => $order->delivery->estimated_delivery_at?->toIso8601String(),
+                    'estimate' => $order->delivery->estimated_delivery?->toIso8601String(),
                     'courier' => $order->delivery->courier ? [
                         'name' => $order->delivery->courier->user?->name,
                         'phone' => $order->delivery->courier->user?->phone,

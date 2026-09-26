@@ -35,8 +35,7 @@ class CartResource extends JsonResource
                 'requires_shipping' => (bool) $item->requires_shipping,
             ])->values(),
             'subtotal' => (int) $this->items->sum(fn ($item) => $item->total_minor),
-            'shipping' => (int) $this->shipping_rate_minor,
-            'total' => (int) ($this->total_minor + (int) $this->shipping_rate_minor),
+            'total' => (int) $this->total_minor,
             'count' => (int) $this->items->sum('quantity'),
         ];
     }

@@ -41,17 +41,27 @@ class PaymentManager
     }
 
     /**
-     * Méthodes de paiement supportées.
+     * Méthodes de paiement supportées, en tenant compte des règles actives
+     * (ex. le paiement à la livraison peut être masqué par l'administrateur).
      *
      * @return array<int, array{id: string, label: string, description: string}>
      */
     public function methods(): array
     {
-        return [
+        $methods = [
             ['id' => 'cod', 'label' => 'Paiement à la livraison', 'description' => 'Payez en espèces à la réception.'],
             ['id' => 'mobile_money', 'label' => 'Mobile Money', 'description' => 'MTN / Orange Money.'],
             ['id' => 'wave', 'label' => 'Wave', 'description' => 'Payez avec votre compte Wave.'],
         ];
+
+        if (! $this->config->codEnabled()) {
+            $methods = array_values(array_filter(
+                $methods,
+                fn (array $method) => $method['id'] !== 'cod',
+            ));
+        }
+
+        return $methods;
     }
 
     /**

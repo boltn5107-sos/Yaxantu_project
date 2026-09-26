@@ -14,8 +14,6 @@ class Cart extends Model
         'status',
         'shipping_address_id',
         'billing_address_id',
-        'shipping_method',
-        'shipping_rate_minor',
         'tax_rate_minor',
         'discount_minor',
         'total_minor',
@@ -27,7 +25,6 @@ class Cart extends Model
     protected function casts(): array
     {
         return [
-            'shipping_rate_minor' => 'integer',
             'tax_rate_minor' => 'integer',
             'discount_minor' => 'integer',
             'total_minor' => 'integer',

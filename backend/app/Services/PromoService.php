@@ -12,6 +12,10 @@ use Illuminate\Support\Str;
  */
 class PromoService
 {
+    public function __construct(
+        private readonly ConfigService $config,
+    ) {}
+
     /**
      * Cherche un code actif (sans validation de règles facultatives).
      */
@@ -32,6 +36,10 @@ class PromoService
      */
     public function errorFor(string $code, ?int $subtotalMinor = null, ?User $user = null): ?string
     {
+        if (! $this->config->promoCodesEnabled()) {
+            return 'Les codes promo sont désactivés actuellement.';
+        }
+
         $promo = $this->findActive($code);
 
         if ($promo === null) {

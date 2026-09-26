@@ -3,7 +3,7 @@
 namespace App\Enums;
 
 /**
- * Rôles applicatifs Yaxantu.
+ * Rôles applicatifs Taaba-taaba.
  * Un utilisateur peut cumuler plusieurs rôles (ex. buyer + seller).
  */
 enum Role: string

@@ -70,7 +70,7 @@ class AdminDisputeTest extends TestCase
             ->postJson('/api/v1/cart/items', ['product_id' => $product->id, 'quantity' => 1]);
         $this->actingAs($buyer, 'sanctum')
             ->postJson('/api/v1/checkout', [
-                'address' => ['address_line1' => 'Rue 1', 'city' => 'Maroua'],
+                'address' => ['address_line1' => 'Rue 1', 'city' => 'Maroua', 'latitude' => 10.591, 'longitude' => 14.3159],
                 'payment_method' => 'cod',
                 'shipping_approved' => true,
             ]);

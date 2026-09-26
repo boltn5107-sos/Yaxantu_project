@@ -13,7 +13,7 @@ class MarketingSeeder extends Seeder
         PromoCode::updateOrCreate(
             ['code' => 'LAUNCH2026'],
             [
-                'description' => 'Lancement Yaxantu : -10% dès 5 000 FCFA.',
+                'description' => 'Lancement Taaba-taaba : -10% dès 5 000 FCFA.',
                 'discount_type' => 'percent',
                 'discount_value' => 10,
                 'min_order_minor' => 5000,

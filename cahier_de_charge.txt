@@ -4,7 +4,7 @@ Version 1.0
 
 1. IDENTITÉ DU PROJET
 
-Nom : Yaxantu
+Nom : Taaba-taaba
 
 Type : Marketplace multi-vendeurs
 
@@ -23,11 +23,11 @@ Objectif général :
 
 Créer une marketplace moderne permettant à toute personne d'acheter ou de vendre facilement, y compris les commerçants ayant une faible maîtrise du numérique ou de la lecture.
 
-Yaxantu doit être simple sans être simpliste, moderne sans être générique et accessible sans donner l'impression d'être une application destinée uniquement aux utilisateurs débutants.
+Taaba-taaba doit être simple sans être simpliste, moderne sans être générique et accessible sans donner l'impression d'être une application destinée uniquement aux utilisateurs débutants.
 
 2. VISION
 
-Yaxantu doit réduire la complexité du commerce en ligne.
+Taaba-taaba doit réduire la complexité du commerce en ligne.
 
 L'utilisateur doit pouvoir :
 
@@ -41,13 +41,13 @@ L'utilisateur doit pouvoir :
 * recevoir et gérer ses paiements ;
 * développer progressivement son activité.
 
-L'intelligence artificielle sera prévue dès la conception, mais le fonctionnement essentiel de Yaxantu ne doit jamais dépendre de l'IA.
+L'intelligence artificielle sera prévue dès la conception, mais le fonctionnement essentiel de Taaba-taaba ne doit jamais dépendre de l'IA.
 
 Si un service IA est indisponible, les fonctions commerciales principales doivent continuer à fonctionner.
 
 3. POSITIONNEMENT UX
 
-Yaxantu doit combiner :
+Taaba-taaba doit combiner :
 
 * simplicité d'utilisation inspirée des applications grand public ;
 * rapidité des services financiers numériques ;
@@ -55,9 +55,9 @@ Yaxantu doit combiner :
 * accessibilité pour les utilisateurs ayant une faible littératie numérique ;
 * architecture technique capable de supporter une croissance importante.
 
-Yaxantu ne doit pas copier WhatsApp, Wave, Shopify, Alibaba, Amazon ou une autre plateforme.
+Taaba-taaba ne doit pas copier WhatsApp, Wave, Shopify, Alibaba, Amazon ou une autre plateforme.
 
-Les bonnes pratiques peuvent être reprises, mais l'expérience utilisateur doit être conçue spécifiquement pour Yaxantu.
+Les bonnes pratiques peuvent être reprises, mais l'expérience utilisateur doit être conçue spécifiquement pour Taaba-taaba.
 
 4. PRINCIPES DE DESIGN
 
@@ -88,7 +88,7 @@ Chaque composant doit appartenir à un design system cohérent.
 
 5. ACCESSIBILITÉ
 
-Yaxantu doit pouvoir être utilisé par :
+Taaba-taaba doit pouvoir être utilisé par :
 
 * utilisateurs expérimentés ;
 * utilisateurs débutants ;
@@ -391,7 +391,7 @@ Les informations importantes doivent être visibles sans parcourir plusieurs éc
 
 20. SYSTÈME DE CONFIANCE
 
-La confiance constitue un élément central de Yaxantu.
+La confiance constitue un élément central de Taaba-taaba.
 
 Prévoir :
 
@@ -867,7 +867,7 @@ Scale :
 
 41. CRITÈRES DE RÉUSSITE
 
-Yaxantu doit permettre :
+Taaba-taaba doit permettre :
 
 * à un utilisateur de comprendre rapidement comment acheter ;
 * à un commerçant de publier un produit simplement ;
@@ -881,9 +881,9 @@ Yaxantu doit permettre :
 
 42. PRINCIPE DIRECTEUR
 
-Yaxantu ne doit pas être simplement un site de vente.
+Taaba-taaba ne doit pas être simplement un site de vente.
 
-Yaxantu doit devenir une infrastructure de commerce accessible.
+Taaba-taaba doit devenir une infrastructure de commerce accessible.
 
 ACHETER simplement.
 

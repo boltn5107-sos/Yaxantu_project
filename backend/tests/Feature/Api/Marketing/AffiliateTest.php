@@ -99,9 +99,10 @@ class AffiliateTest extends TestCase
                 'state_province' => 'Littoral',
                 'country_code' => 'CM',
                 'phone' => '691234567',
+                'latitude' => 4.0511,
+                'longitude' => 9.7679,
             ],
             'payment_method' => 'cod',
-            'shipping_approved' => true,
         ];
     }
 
@@ -111,7 +112,7 @@ class AffiliateTest extends TestCase
             ->postJson('/api/v1/cart/items', ['product_id' => $product->id, 'quantity' => 1]);
 
         return $this->actingAs($buyer, 'sanctum')
-            ->postJson('/api/v1/checkout', array_merge($this->addressPayload(), $promoCode ? ['promo_code' => $promoCode] : []));
+            ->postJson('/api/v1/checkout', array_merge($this->addressPayload(), ['shipping_approved' => true], $promoCode ? ['promo_code' => $promoCode] : []));
     }
 
     public function test_affiliate_index_is_null_without_application(): void

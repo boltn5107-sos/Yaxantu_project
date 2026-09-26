@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { Store, Rocket, LogIn, Loader2 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 
@@ -15,11 +16,12 @@ export default function SellerOnboardingGate({
   children: React.ReactNode;
 }) {
   const { user, loading } = useAuth();
+  const t = useTranslations("sellerGate");
 
   if (loading) {
     return (
       <div className="flex min-h-[50vh] items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+        <Loader2 className="h-8 w-8 animate-spin text-emerald-600" />
       </div>
     );
   }
@@ -29,17 +31,17 @@ export default function SellerOnboardingGate({
       <div className="mx-auto max-w-xl px-4 py-20 text-center">
         <Store className="mx-auto h-12 w-12 text-gray-300" />
         <h1 className="mt-4 text-xl font-bold text-gray-900">
-          Espace vendeur réservé
+          {t("reservedTitle")}
         </h1>
         <p className="mt-2 text-gray-600">
-          Connectez-vous pour consulter vos ventes.
+          {t("reservedDesc")}
         </p>
         <Link
           href="/auth/login"
-          className="mt-6 inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-700"
+          className="mt-6 inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700"
         >
           <LogIn className="h-4 w-4" />
-          Se connecter
+          {t("signIn")}
         </Link>
       </div>
     );
@@ -52,18 +54,17 @@ export default function SellerOnboardingGate({
           <Store className="h-8 w-8 text-amber-600" />
         </div>
         <h1 className="mt-6 text-2xl font-bold text-gray-900">
-          Créez d&apos;abord votre boutique
+          {t("createFirst")}
         </h1>
         <p className="mt-2 text-gray-600">
-          Vos ventes, finances et analyses sont liées à une boutique. Terminez
-          vos 5 étapes pour les débloquer.
+          {t("createFirstDesc")}
         </p>
         <Link
           href="/seller/onboarding"
           className="mt-6 inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700"
         >
           <Rocket className="h-4 w-4" />
-          Créer ma boutique
+          {t("createBtn")}
         </Link>
       </div>
     );

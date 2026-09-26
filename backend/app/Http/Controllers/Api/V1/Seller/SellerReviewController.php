@@ -54,7 +54,7 @@ class SellerReviewController extends Controller
                 'content' => $review->content,
                 'status' => $review->status,
                 'status_label' => ReviewStatus::tryFrom($review->status)?->label() ?? $review->status,
-                'author' => $review->user?->name ?? 'Utilisateur Yaxantu',
+                'author' => $review->user?->name ?? 'Utilisateur Taaba-taaba',
                 'is_verified_purchase' => (bool) $review->is_verified_purchase,
                 'product' => $review->product ? [
                     'id' => $review->product->id,

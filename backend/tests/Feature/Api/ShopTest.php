@@ -119,4 +119,50 @@ class ShopTest extends TestCase
             'channel' => 'instagram',
         ]);
     }
+
+    public function test_seller_updates_shop_location(): void
+    {
+        $shop = Seller::factory()->create([
+            'shop_name' => 'Boutique Position',
+            'slug' => 'boutique-position',
+            'status' => 'active',
+            'is_onboarded' => true,
+            'location_lat' => null,
+            'location_lng' => null,
+        ]);
+        $owner = $shop->user;
+
+        $this->actingAs($owner, 'sanctum')
+            ->putJson('/api/v1/seller/shop/location', [
+                'location_lat' => 12.3714,
+                'location_lng' => -1.5197,
+                'location_address' => 'Ouagadougou',
+            ])
+            ->assertOk()
+            ->assertJsonPath('message', 'Position de la boutique enregistrée.')
+            ->assertJsonPath('data.location.address', 'Ouagadougou');
+
+        $fresh = $shop->fresh();
+        $this->assertSame(12.3714, (float) $fresh->location_lat);
+        $this->assertSame(-1.5197, (float) $fresh->location_lng);
+        $this->assertSame('Ouagadougou', $fresh->location_address);
+
+        $this->actingAs($owner, 'sanctum')
+            ->getJson('/api/v1/seller/shop')
+            ->assertOk()
+            ->assertJsonPath('data.shop.has_location', true)
+            ->assertJsonPath('data.shop.location.lat', 12.3714);
+    }
+
+    public function test_shop_location_update_requires_a_seller_profile(): void
+    {
+        $buyer = User::factory()->create();
+
+        $this->actingAs($buyer, 'sanctum')
+            ->putJson('/api/v1/seller/shop/location', [
+                'location_lat' => 12.3714,
+                'location_lng' => -1.5197,
+            ])
+            ->assertForbidden();
+    }
 }

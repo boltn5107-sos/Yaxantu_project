@@ -69,7 +69,14 @@ export type ProductImage = {
   path: string;
   alt_text: string | null;
   is_primary: boolean;
+  kind?: "image" | "video";
 };
+
+export function isVideoUrl(
+  url: string | null | undefined,
+): url is string {
+  return Boolean(url && /\.(mp4|webm|mov|m4v|ogv)(?:[?#]|$)/i.test(url));
+}
 
 export type Product = {
   id: number;
@@ -194,7 +201,6 @@ export type Cart = {
   currency: string;
   items: CartItem[];
   subtotal: number;
-  shipping: number;
   total: number;
   count: number;
 };
@@ -213,6 +219,8 @@ export type Address = {
   country_code: string;
   phone: string | null;
   is_default: boolean;
+  latitude: number | null;
+  longitude: number | null;
   label: string;
 };
 
@@ -227,6 +235,8 @@ export type CheckoutPayload = {
     postal_code?: string;
     country_code?: string;
     phone?: string;
+    latitude?: number;
+    longitude?: number;
   };
   shipping_address_id?: number;
   payment_method: string;
@@ -489,6 +499,16 @@ export async function getProduct(slug: string): Promise<Product> {
   return envelope.data;
 }
 
+export async function visualSearchProducts(file: File): Promise<Product[]> {
+  const form = new FormData();
+  form.append("image", file);
+  const envelope = await apiFetch<ApiEnvelope<Product[]>>(
+    "/v1/products/visual-search",
+    { method: "POST", body: form },
+  );
+  return envelope.data;
+}
+
 // ── Authentification (SPA cookie) ---------------------------------------
 
 export async function register(input: {
@@ -529,13 +549,12 @@ export async function getMe(): Promise<User> {
 
 // ── Panier ---------------------------------------------------------------
 
-const EMPTY_CART: Cart = {
+export const EMPTY_CART: Cart = {
   id: null,
   status: "active",
   currency: "XOF",
   items: [],
   subtotal: 0,
-  shipping: 0,
   total: 0,
   count: 0,
 };
@@ -601,6 +620,8 @@ export type AddressInput = {
   postal_code?: string;
   country_code?: string;
   phone?: string;
+  latitude?: number;
+  longitude?: number;
   is_default?: boolean;
 };
 
@@ -753,7 +774,7 @@ export async function requestAffiliatePayout(input: {
 
 // ── Checkout & commandes -------------------------------------------------
 
-export async function getPaymentMethods(): Promise<PaymentMethod[]> {
+export async function getCheckoutConfig(): Promise<PaymentMethod[]> {
   const envelope = await apiFetch<ApiEnvelope<PaymentMethod[]>>(
     "/v1/payment-methods",
   );
@@ -767,6 +788,38 @@ export async function checkout(
     method: "POST",
     body: JSON.stringify(payload),
   });
+}
+
+export type ShippingEstimateSeller = {
+  seller_id: number;
+  shop_name: string;
+  subtotal: number;
+  distance_km: number | null;
+  shipping: number;
+  shipping_free: boolean;
+};
+
+export type ShippingEstimate = {
+  shipping_total: number | null;
+  free_threshold: number;
+  sellers: ShippingEstimateSeller[];
+};
+
+/** Estimation « à la Yango » des frais de livraison pour l'adresse choisie. */
+export async function estimateShipping(payload: {
+  shipping_address_id?: number;
+  address?: {
+    latitude?: number;
+    longitude?: number;
+    address_line1?: string;
+    city?: string;
+  };
+}): Promise<ShippingEstimate> {
+  const envelope = await apiFetch<ApiEnvelope<ShippingEstimate>>(
+    "/v1/checkout/estimate",
+    { method: "POST", body: JSON.stringify(payload) },
+  );
+  return envelope.data;
 }
 
 export async function getOrders(): Promise<Order[]> {
@@ -1170,6 +1223,26 @@ export type SellerFinances = {
     requested_at: string | null;
   }[];
   payout_method: string | null;
+  summary: {
+    sales_count: number;
+    sales_gross: number;
+    commissions: number;
+    fees: number;
+    net_sales: number;
+    released_escrow: number;
+    payouts: number;
+    payout_fees: number;
+    payout_reversals: number;
+    net_cash: number;
+  };
+  by_month: {
+    label: string;
+    sales_count: number;
+    gross: number;
+    commissions: number;
+    fees: number;
+    net: number;
+  }[];
   transactions: {
     id: number;
     type: string;
@@ -1214,6 +1287,96 @@ export async function getSellerAnalytics(
     `/v1/seller/analytics?period=${period}`,
   );
   return envelope.data;
+}
+
+// ── Module Comptabilité vendeur -------------------------------------------
+
+export type AccountingExpense = {
+  id: number;
+  amount_minor: number;
+  category: string;
+  incurred_at: string;
+  description: string | null;
+  receipt_url: string | null;
+};
+
+export type AccountingReport = {
+  period: { from: string; to: string };
+  balance: { available: number; pending: number; currency: string };
+  summary: {
+    sales_count: number;
+    sales_gross: number;
+    commissions: number;
+    fees: number;
+    net_sales: number;
+    expenses: number;
+    benefit: number;
+  };
+  goal: {
+    monthly_minor: number;
+    achieved_minor: number;
+    progress_pct: number;
+  };
+  evolution: { label: string; revenue: number; expenses: number }[];
+  expenses_by_category: { category: string; total_minor: number; count: number }[];
+  top_products: {
+    product_id: number;
+    name: string;
+    image: string | null;
+    quantity: number;
+    revenue_minor: number;
+  }[];
+  sales: {
+    id: number;
+    order_number: string | null;
+    gross: number;
+    commission: number;
+    fee: number;
+    net: number;
+    date: string;
+  }[];
+  expenses: AccountingExpense[];
+};
+
+export async function getSellerAccounting(
+  from?: string,
+  to?: string,
+): Promise<AccountingReport> {
+  const params = new URLSearchParams();
+  if (from) params.set("from", from);
+  if (to) params.set("to", to);
+  const query = params.toString();
+  const envelope = await apiFetch<ApiEnvelope<AccountingReport>>(
+    `/v1/seller/accounting${query ? `?${query}` : ""}`,
+  );
+  return envelope.data;
+}
+
+export async function createSellerExpense(payload: {
+  amount_minor: number;
+  category: string;
+  incurred_at: string;
+  description?: string;
+  receipt?: File;
+}): Promise<{ message: string; data: { expense: AccountingExpense } }> {
+  const form = new FormData();
+  form.append("amount_minor", String(payload.amount_minor));
+  form.append("category", payload.category);
+  form.append("incurred_at", payload.incurred_at);
+  if (payload.description) form.append("description", payload.description);
+  if (payload.receipt) form.append("receipt", payload.receipt);
+  return apiFetch("/v1/seller/expenses", { method: "POST", body: form });
+}
+
+export async function deleteSellerExpense(id: number): Promise<{ message: string }> {
+  return apiFetch(`/v1/seller/expenses/${id}`, { method: "DELETE" });
+}
+
+export async function updateSellerGoal(monthlyMinor: number): Promise<{ message: string }> {
+  return apiFetch("/v1/seller/goal", {
+    method: "PUT",
+    body: JSON.stringify({ monthly_minor: monthlyMinor }),
+  });
 }
 
 // ── Boutique publique / produits du vendeur / partage --------------------
@@ -1268,6 +1431,12 @@ export type MyShop = {
     share_link: string;
     trust_score: number;
     payout_method: string | null;
+    location: {
+      lat: number | null;
+      lng: number | null;
+      address: string | null;
+    };
+    has_location: boolean;
   };
   stats: {
     visits_today: number;
@@ -1316,6 +1485,22 @@ export async function trackShopShare(
   return apiFetch("/v1/seller/shop/share", {
     method: "POST",
     body: JSON.stringify({ channel }),
+  });
+}
+
+export type ShopLocationPayload = {
+  location_lat: number;
+  location_lng: number;
+  location_address?: string | null;
+};
+
+/** Le vendeur renseigne ou corrige la position de sa boutique (livraison). */
+export async function updateShopLocation(
+  payload: ShopLocationPayload,
+): Promise<{ message: string; data: { location: { lat: number; lng: number; address: string | null } } }> {
+  return apiFetch("/v1/seller/shop/location", {
+    method: "PUT",
+    body: JSON.stringify(payload),
   });
 }
 
@@ -1466,7 +1651,7 @@ export async function courierDeliver(
 // ── Paramètres & sécurité --------------------------------------------------
 
 export type SettingsGroups = {
-  account: { name: string; phone: string | null; locale: string | null };
+  account: { name: string; phone: string | null; locale: string | null; avatar: string | null };
   accessibility: {
     voice_mode: boolean;
     large_text: boolean;
@@ -1499,6 +1684,15 @@ export async function updateSettings(
   });
 }
 
+export async function uploadAvatar(file: File): Promise<{ message: string }> {
+  const form = new FormData();
+  form.append("avatar", file);
+  return apiFetch("/v1/settings", {
+    method: "PATCH",
+    body: form,
+  });
+}
+
 export async function contactHelp(message: string): Promise<{
   message: string;
   ticket: string;
@@ -1518,6 +1712,91 @@ export async function submitSupport(input: {
     method: "POST",
     body: JSON.stringify(input),
   });
+}
+
+// ── Discussion acheteur ↔ vendeur (texte + note vocale) --------------------
+
+export type ChatPartner = {
+  name: string;
+  avatar: string | null;
+  role: "buyer" | "seller";
+  href: string | null;
+};
+
+export type ChatMessage = {
+  id: number;
+  kind: "text" | "voice";
+  text: string | null;
+  voice: string | null;
+  from_me: boolean;
+  created_at: string | null;
+};
+
+export type ConversationSummary = {
+  id: number;
+  partner: ChatPartner;
+  last_message: ChatMessage | null;
+  unread_count: number;
+  updated_at: string | null;
+};
+
+export type ConversationThread = {
+  conversation: ConversationSummary;
+  messages: ChatMessage[];
+};
+
+export async function getConversations(): Promise<ConversationSummary[]> {
+  const envelope = await apiFetch<ApiEnvelope<{ conversations: ConversationSummary[] }>>(
+    "/v1/messages",
+  );
+  return envelope.data.conversations;
+}
+
+export async function startConversation(
+  sellerId: number,
+): Promise<ConversationSummary> {
+  const envelope = await apiFetch<ApiEnvelope<{ conversation: ConversationSummary }>>(
+    "/v1/messages/start",
+    { method: "POST", body: JSON.stringify({ seller_id: sellerId }) },
+  );
+  return envelope.data.conversation;
+}
+
+export async function getConversation(
+  conversationId: number,
+): Promise<ConversationThread> {
+  const envelope = await apiFetch<ApiEnvelope<ConversationThread>>(
+    `/v1/messages/${conversationId}`,
+  );
+  return envelope.data;
+}
+
+export async function sendChatTextMessage(
+  conversationId: number,
+  text: string,
+): Promise<ChatMessage> {
+  const envelope = await apiFetch<
+    ApiEnvelope<{ message: ChatMessage }>
+  >(`/v1/messages/${conversationId}/messages`, {
+    method: "POST",
+    body: JSON.stringify({ text }),
+  });
+  return envelope.data.message;
+}
+
+export async function sendChatVoiceMessage(
+  conversationId: number,
+  voice: Blob,
+): Promise<ChatMessage> {
+  const form = new FormData();
+  form.append("voice_note", voice, "note.webm");
+  const envelope = await apiFetch<
+    ApiEnvelope<{ message: ChatMessage }>
+  >(`/v1/messages/${conversationId}/messages`, {
+    method: "POST",
+    body: form,
+  });
+  return envelope.data.message;
 }
 
 export async function updatePin(pin: string): Promise<{ message: string }> {
@@ -2437,6 +2716,30 @@ export async function deleteAdminPromoCode(promoCodeId: number): Promise<string>
     { method: "DELETE" },
   );
   return envelope.message ?? "Code promo supprimé.";
+}
+
+export type CheckoutConfigSettings = {
+  cod_enabled: boolean;
+  promo_codes_enabled: boolean;
+};
+
+export async function getAdminCheckoutConfig(): Promise<CheckoutConfigSettings> {
+  const envelope = await apiFetch<ApiEnvelope<CheckoutConfigSettings>>(
+    "/v1/admin/config/checkout",
+  );
+  return envelope.data;
+}
+
+export async function updateAdminCheckoutConfig(
+  input: Partial<CheckoutConfigSettings>,
+): Promise<CheckoutConfigSettings> {
+  const envelope = await apiFetch<
+    ApiEnvelope<CheckoutConfigSettings>
+  >("/v1/admin/config/checkout", {
+    method: "PUT",
+    body: JSON.stringify(input),
+  });
+  return envelope.data;
 }
 
 export async function getAdminReferrals(params?: {

@@ -18,7 +18,6 @@ class Order extends Model
         'shipping_status',
         'shipping_address_id',
         'billing_address_id',
-        'shipping_method',
         'shipping_rate_minor',
         'tax_rate_minor',
         'discount_minor',

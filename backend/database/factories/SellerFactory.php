@@ -28,6 +28,13 @@ class SellerFactory extends Factory
             'verification_level' => 0,
             'verified_at' => null,
             'currency' => 'XOF',
+            // Position par défaut (Douala) : la tarification de la livraison
+            // exige des coordonnées sur les deux extrémités du trajet. Les
+            // tests qui couvrent les adresses de Douala obtiennent un tarif
+            // déterministe (distance 0 → prise en charge de base).
+            'location_lat' => 4.0511,
+            'location_lng' => 9.7679,
+            'location_address' => 'Boutique test',
         ];
     }
 

@@ -1,4 +1,4 @@
-# Yaxantu — Marketplace africaine
+# Taaba-taaba — Marketplace africaine
 
 Plateforme de e-commerce panafricaine connectée : catalogue, panier, commandes, avis, favoris, espace vendeur (onboarding, produits, commandes, finances, analytics) et livraison avec validation explicite des frais.
 

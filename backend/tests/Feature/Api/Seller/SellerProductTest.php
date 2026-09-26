@@ -84,7 +84,6 @@ class SellerProductTest extends TestCase
                 'stock_quantity' => 8,
                 'category_id' => $this->categoryId(),
                 'requires_shipping' => true,
-                'shipping_rate_minor' => 1000,
                 'images' => [
                     UploadedFile::fake()->image('sac1.jpg'),
                     UploadedFile::fake()->image('sac2.jpg'),
@@ -142,5 +141,46 @@ class SellerProductTest extends TestCase
         $this->actingAs($other, 'sanctum')
             ->deleteJson('/api/v1/seller/products/'.$product->slug)
             ->assertForbidden();
+    }
+
+    public function test_seller_can_add_short_video_alongside_photos(): void
+    {
+        Storage::fake('public');
+
+        $user = $this->sellerUser();
+        Seller::factory()->create([
+            'user_id' => $user->id,
+            'status' => 'active',
+            'is_onboarded' => true,
+        ]);
+
+        // En-tête MP4 minimale reconnue par finfo comme video/mp4.
+        $mp4 = "\x00\x00\x00\x18ftypmp42\x00\x00\x00\x00mp42isom".str_repeat("\x00", 128);
+
+        $response = $this->actingAs($user, 'sanctum')
+            ->postJson('/api/v1/seller/products', [
+                'name' => 'Téléphone reconditionné',
+                'price_minor' => 65000,
+                'stock_quantity' => 3,
+                'category_id' => $this->categoryId(),
+                'images' => [
+                    UploadedFile::fake()->image('tel.jpg'),
+                    UploadedFile::fake()->createWithContent('demo.mp4', $mp4),
+                ],
+            ])
+            ->assertCreated()
+            ->assertJsonPath('data.images.0.kind', 'image')
+            ->assertJsonPath('data.images.1.kind', 'video');
+
+        $this->assertStringEndsWith('.jpg', (string) $response->json('data.thumbnail'));
+        $this->assertStringEndsWith('.mp4', (string) $response->json('data.images.1.path'));
+
+        $product = $user->seller->products()->with(['images'])->firstOrFail();
+
+        $this->assertTrue($product->images->some(fn ($image) => $image->kind === 'image'));
+        $this->assertTrue($product->images->some(fn ($image) => $image->kind === 'video'));
+
+        $files = collect(Storage::disk('public')->files('products'));
+        $this->assertTrue($files->some(fn ($file) => str_ends_with($file, '.mp4')));
     }
 }

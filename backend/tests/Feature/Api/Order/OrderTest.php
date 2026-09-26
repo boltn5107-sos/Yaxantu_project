@@ -58,7 +58,7 @@ class OrderTest extends TestCase
 
         $response = $this->actingAs($user, 'sanctum')
             ->postJson('/api/v1/checkout', [
-                'address' => ['address_line1' => 'Rue 1', 'city' => 'Yaoundé'],
+                'address' => ['address_line1' => 'Rue 1', 'city' => 'Douala', 'latitude' => 4.0511, 'longitude' => 9.7679],
                 'payment_method' => 'cod',
                 'shipping_approved' => true,
             ]);
@@ -101,7 +101,7 @@ class OrderTest extends TestCase
             ->assertJsonPath('data.status_label', 'Paiement en attente')
             ->assertJsonCount(1, 'data.items')
             ->assertJsonPath('data.items.0.name', 'Article')
-            ->assertJsonPath('data.total', 7000)
+            ->assertJsonPath('data.total', 6000)
             ->assertJsonStructure(['data' => ['address', 'payment', 'delivery']]);
     }
 

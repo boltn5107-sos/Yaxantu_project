@@ -25,6 +25,8 @@ class AddressResource extends JsonResource
             'country_code' => $this->country_code,
             'phone' => $this->phone,
             'is_default' => (bool) $this->is_default,
+            'latitude' => $this->latitude !== null ? (float) $this->latitude : null,
+            'longitude' => $this->longitude !== null ? (float) $this->longitude : null,
             'label' => trim($this->address_line1.' '.($this->city ?? '')),
         ];
     }

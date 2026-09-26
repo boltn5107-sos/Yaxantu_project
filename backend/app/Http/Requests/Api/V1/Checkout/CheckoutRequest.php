@@ -25,6 +25,8 @@ class CheckoutRequest extends FormRequest
             'address.postal_code' => ['nullable', 'string', 'max:20'],
             'address.country_code' => ['nullable', 'string', 'size:2'],
             'address.phone' => ['nullable', 'string', 'max:30'],
+            'address.latitude' => ['nullable', 'numeric', 'between:-90,90'],
+            'address.longitude' => ['nullable', 'numeric', 'between:-180,180'],
             'payment_method' => ['nullable', 'in:cod,mobile_money,wave'],
             'mobile_money_phone' => ['nullable', 'required_if:payment_method,mobile_money,wave', 'string', 'max:20'],
             'mobile_money_provider' => ['nullable', 'in:momo,orange'],

@@ -53,7 +53,7 @@ class OtpService
                 'user_id' => $user->id,
                 'type' => 'sms.out',
                 'title' => 'Code de connexion',
-                'message' => 'Votre code de connexion Yaxantu est '.$code.'. Sa lecture à voix haute est disponible dans l\'application.',
+                'message' => 'Votre code de connexion Taaba-taaba est '.$code.'. Sa lecture à voix haute est disponible dans l\'application.',
                 'data' => ['dev_code' => app()->environment('local', 'testing') ? $code : null],
                 'priority' => 'high',
             ]);

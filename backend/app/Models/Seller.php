@@ -35,6 +35,7 @@ class Seller extends Model
         'sponsor_id',
         'trust_score',
         'onboarded_at',
+        'monthly_goal_minor',
     ];
 
     protected function casts(): array
@@ -49,6 +50,7 @@ class Seller extends Model
             'location_lat' => 'decimal:7',
             'location_lng' => 'decimal:7',
             'trust_score' => 'integer',
+            'monthly_goal_minor' => 'integer',
         ];
     }
 
@@ -95,6 +97,11 @@ class Seller extends Model
     public function payouts(): HasMany
     {
         return $this->hasMany(SellerPayout::class);
+    }
+
+    public function expenses(): HasMany
+    {
+        return $this->hasMany(SellerExpense::class);
     }
 
     public function trustScoreEvents(): HasMany

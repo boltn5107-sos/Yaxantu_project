@@ -1,10 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { Gift, Copy, Check, Loader2, Users } from "lucide-react";
 import { getReferral, type ReferralData } from "@/lib/api";
 
 export default function ReferralCard() {
+  const t = useTranslations("referral");
   const [data, setData] = useState<ReferralData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [copiedLink, setCopiedLink] = useState(false);
@@ -14,9 +16,9 @@ export default function ReferralCard() {
     getReferral()
       .then(setData)
       .catch((err) =>
-        setError(err instanceof Error ? err.message : "Parrainage indisponible."),
+        setError(err instanceof Error ? err.message : t("unavailable")),
       );
-  }, []);
+  }, [t]);
 
   const copy = async (text: string, onDone: (v: boolean) => void) => {
     try {
@@ -67,11 +69,11 @@ export default function ReferralCard() {
           >
             {copiedCode ? (
               <>
-                <Check className="h-3.5 w-3.5 text-emerald-400" /> Copié !
+                <Check className="h-3.5 w-3.5 text-emerald-400" /> {t("copied")}
               </>
             ) : (
               <>
-                <Copy className="h-3.5 w-3.5" /> Copier
+                <Copy className="h-3.5 w-3.5" /> {t("copy")}
               </>
             )}
           </button>
@@ -81,8 +83,7 @@ export default function ReferralCard() {
       <div className="flex items-center justify-between rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm">
         <span className="inline-flex items-center gap-2 text-gray-700">
           <Users className="h-4 w-4 text-gray-500" />
-          Invité{data.invited_count > 1 ? "s" : ""} enregistré
-          {data.invited_count === 1 ? "" : "s"} via votre code
+          {t("invited", { count: data.invited_count })}
         </span>
         <span className="font-semibold text-gray-900">{data.invited_count}</span>
       </div>
@@ -90,7 +91,7 @@ export default function ReferralCard() {
       {data.reward_codes.length > 0 && (
         <div>
           <p className="text-sm font-medium text-gray-700 mb-2">
-            Vos bons de parrainage à utiliser :
+            {t("rewardCodes")}
           </p>
           <div className="flex flex-wrap gap-2">
             {data.reward_codes.map((code) => (
@@ -104,7 +105,7 @@ export default function ReferralCard() {
 
       <div>
         <p className="text-sm font-medium text-gray-700 mb-2">
-          Votre lien d&apos;invitation
+          {t("inviteLink")}
         </p>
         <div className="flex items-center gap-2">
           <input
@@ -120,11 +121,11 @@ export default function ReferralCard() {
           >
             {copiedLink ? (
               <>
-                <Check className="h-3.5 w-3.5 text-emerald-600" /> Copié !
+                <Check className="h-3.5 w-3.5 text-emerald-600" /> {t("copied")}
               </>
             ) : (
               <>
-                <Copy className="h-3.5 w-3.5" /> Copier
+                <Copy className="h-3.5 w-3.5" /> {t("copy")}
               </>
             )}
           </button>

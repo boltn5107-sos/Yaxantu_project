@@ -12,3 +12,64 @@ body {
   background-color: #fff;
   color: #111827;
 }
+
+@layer utilities {
+  .container-x {
+    margin-inline: auto;
+    max-width: 80rem;
+    padding-inline: 1rem;
+  }
+  @media (min-width: 640px) {
+    .container-x {
+      padding-inline: 1.5rem;
+    }
+  }
+  @media (min-width: 1024px) {
+    .container-x {
+      padding-inline: 2rem;
+    }
+  }
+
+  .bg-grid {
+    background-image:
+      linear-gradient(to right, rgb(255 255 255 / 0.08) 1px, transparent 1px),
+      linear-gradient(to bottom, rgb(255 255 255 / 0.08) 1px, transparent 1px);
+    background-size: 32px 32px;
+  }
+
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+@layer base {
+  :where(a, button, input, textarea, select, summary, [tabindex]):focus-visible {
+    outline: 2px solid var(--color-emerald-500);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  /*
+   * Filet de sécurité images : une image média ne déborde jamais de son
+   * conteneur et ne subit jamais d'étirement. Les utilitaires explicites
+   * (object-cover, object-contain…) restent prioritaires.
+   */
+  img,
+  video {
+    max-width: 100%;
+    height: auto;
+    object-fit: contain;
+  }
+}
+
+/* Respect users who prefer reduced motion. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

@@ -40,7 +40,7 @@ class SellerOnboardingController extends Controller
                 'current_step' => (int) $seller->onboarding_step,
                 'is_onboarded' => (bool) $seller->is_onboarded,
                 'shop_name' => $seller->shop_name,
-                'logo' => $seller->logo_path,
+                'logo' => \App\Support\Media::url($seller->logo_path),
                 'main_category_id' => $seller->main_category_id,
                 'location' => [
                     'lat' => $seller->location_lat,
@@ -145,7 +145,7 @@ class SellerOnboardingController extends Controller
         return response()->json([
             'message' => 'Photo de la boutique enregistrée.',
             'data' => [
-                'logo' => $path,
+                'logo' => \App\Support\Media::url($path),
                 'current_step' => (int) $seller->onboarding_step,
                 'next_step' => 2,
             ],

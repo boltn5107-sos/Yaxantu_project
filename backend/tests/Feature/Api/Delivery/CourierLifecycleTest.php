@@ -137,7 +137,7 @@ class CourierLifecycleTest extends TestCase
             ->postJson('/api/v1/cart/items', ['product_id' => $product->id, 'quantity' => 1]);
         $this->actingAs($buyer, 'sanctum')
             ->postJson('/api/v1/checkout', [
-                'address' => ['address_line1' => 'Rue 5', 'city' => 'Douala'],
+                'address' => ['address_line1' => 'Rue 5', 'city' => 'Douala', 'latitude' => 4.0511, 'longitude' => 9.7679],
                 'payment_method' => 'cod',
                 'shipping_approved' => true,
             ]);

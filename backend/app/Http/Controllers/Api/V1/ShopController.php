@@ -108,6 +108,14 @@ class ShopController extends Controller
                     'share_link' => $this->shareLink($seller),
                     'trust_score' => (int) $seller->trust_score,
                     'payout_method' => $seller->payout_method,
+                    'location' => [
+                        'lat' => $seller->location_lat !== null ? (float) $seller->location_lat : null,
+                        'lng' => $seller->location_lng !== null ? (float) $seller->location_lng : null,
+                        'address' => $seller->location_address,
+                    ],
+                    'has_location' => $seller->location_lat !== null
+                        && $seller->location_lng !== null
+                        && ((float) $seller->location_lat !== 0.0 || (float) $seller->location_lng !== 0.0),
                 ],
                 'stats' => [
                     'visits_today' => $visitsToday,
@@ -153,9 +161,47 @@ class ShopController extends Controller
         ]);
     }
 
+    /**
+     * Mise à jour de la position de la boutique par le vendeur.
+     *
+     * La position est exigée pour la tarification de la livraison : les
+     * boutiques existantes la renseignent ici (mise à jour de la fiche), les
+     * nouvelles la fournissent obligatoirement à l'onboarding (étape 4).
+     */
+    public function updateLocation(Request $request): JsonResponse
+    {
+        $seller = $request->user()->seller ?: abort(403, 'Profil Vendeur requis.');
+
+        $validated = $request->validate([
+            'location_lat' => ['required', 'numeric', 'between:-90,90'],
+            'location_lng' => ['required', 'numeric', 'between:-180,180'],
+            'location_address' => ['nullable', 'string', 'max:190'],
+        ]);
+
+        $seller->forceFill([
+            'location_lat' => $validated['location_lat'],
+            'location_lng' => $validated['location_lng'],
+            'location_address' => $validated['location_address'] ?? null,
+        ])->save();
+
+        return response()->json([
+            'message' => 'Position de la boutique enregistrée.',
+            'data' => [
+                'location' => [
+                    'lat' => (float) $seller->location_lat,
+                    'lng' => (float) $seller->location_lng,
+                    'address' => $seller->location_address,
+                ],
+            ],
+        ]);
+    }
+
     public function product(\App\Models\Product $product): array
     {
-        $primary = $product->images->firstWhere('is_primary', true) ?? $product->images->first();
+        $primary = $product->images
+            ->filter(fn ($image) => $image->kind === 'image')
+            ->firstWhere('is_primary', true)
+            ?? $product->images->filter(fn ($image) => $image->kind === 'image')->first();
 
         return [
             'id' => $product->id,
@@ -175,6 +221,7 @@ class ShopController extends Controller
                 'path' => $this->assetUrl($image->path),
                 'alt_text' => $image->alt_text,
                 'is_primary' => (bool) $image->is_primary,
+                'kind' => $image->kind ?? 'image',
             ])->values(),
         ];
     }

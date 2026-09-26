@@ -18,8 +18,10 @@ class ProductImage extends Model
         'sort_order',
         'file_size',
         'mime_type',
+        'kind',
         'width',
         'height',
+        'image_hash',
     ];
 
     protected function casts(): array

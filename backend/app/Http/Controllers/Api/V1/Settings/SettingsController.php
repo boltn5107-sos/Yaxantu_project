@@ -37,7 +37,7 @@ class SettingsController extends Controller
                     'name' => $user->name,
                     'phone' => $user->phone,
                     'email' => $user->email,
-                    'avatar' => $user->avatar_path,
+                    'avatar' => \App\Support\Media::url($user->avatar_path),
                     'locale' => $user->locale,
                     'languages' => self::LANGUAGES,
                 ],

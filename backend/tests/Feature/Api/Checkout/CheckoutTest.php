@@ -68,9 +68,10 @@ class CheckoutTest extends TestCase
                 'state_province' => 'Littoral',
                 'country_code' => 'CM',
                 'phone' => '691234567',
+                'latitude' => 4.0511,
+                'longitude' => 9.7679,
             ],
             'payment_method' => 'cod',
-            'shipping_approved' => true,
         ], $overrides);
     }
 
@@ -161,7 +162,7 @@ class CheckoutTest extends TestCase
             ->postJson('/api/v1/cart/items', ['product_id' => $productB->id]);
 
         $response = $this->actingAs($user, 'sanctum')
-            ->postJson('/api/v1/checkout', $this->addressPayload());
+            ->postJson('/api/v1/checkout', $this->addressPayload(['shipping_approved' => true]));
 
         $response->assertCreated();
 
@@ -188,31 +189,7 @@ class CheckoutTest extends TestCase
             ->assertJsonValidationErrors(['address.address_line1', 'address.city']);
     }
 
-    public function test_checkout_requires_buyer_approval_for_shipping_fees(): void
-    {
-        $user = $this->buyer();
-        $seller = $this->seller();
-        $product = $this->product($seller, 'Article Léger', 1000);
-
-        $this->actingAs($user, 'sanctum')
-            ->postJson('/api/v1/cart/items', ['product_id' => $product->id, 'quantity' => 1]);
-
-        $this->actingAs($user, 'sanctum')
-            ->postJson('/api/v1/checkout', [
-                'address' => ['address_line1' => 'Rue 1', 'city' => 'Douala'],
-                'payment_method' => 'cod',
-            ])
-            ->assertStatus(422)
-            ->assertJsonPath(
-                'message',
-                'Vous devez accepter les frais de livraison de 2000 FCFA avant de confirmer la commande.',
-            );
-
-        $this->assertDatabaseCount('orders', 0);
-        $this->assertDatabaseCount('cart_items', 1);
-    }
-
-    public function test_checkout_charges_shipping_when_approved(): void
+    public function test_checkout_charges_shipping_fees_by_default(): void
     {
         $user = $this->buyer();
         $seller = $this->seller();
@@ -222,15 +199,74 @@ class CheckoutTest extends TestCase
             ->postJson('/api/v1/cart/items', ['product_id' => $product->id, 'quantity' => 1]);
 
         $response = $this->actingAs($user, 'sanctum')
-            ->postJson('/api/v1/checkout', $this->addressPayload());
+            ->postJson('/api/v1/checkout', $this->addressPayload(['shipping_approved' => true]));
 
+        // La boutique de test est à Douala comme l'adresse du client :
+        // distance 0 → prise en charge de base (1000), aucune case requis.
         $response->assertCreated();
         $this->assertDatabaseHas('orders', [
             'user_id' => $user->id,
             'subtotal_minor' => 1000,
-            'shipping_rate_minor' => 2000,
-            'total_minor' => 3000,
+            'shipping_rate_minor' => 1000,
+            'total_minor' => 2000,
         ]);
+    }
+
+    public function test_checkout_requires_shipping_approval_when_shipping_is_charged(): void
+    {
+        $user = $this->buyer();
+        $seller = $this->seller();
+        $product = $this->product($seller, 'Colis', 1000);
+
+        $this->actingAs($user, 'sanctum')
+            ->postJson('/api/v1/cart/items', ['product_id' => $product->id, 'quantity' => 1]);
+
+        $this->actingAs($user, 'sanctum')
+            ->postJson('/api/v1/checkout', $this->addressPayload())
+            ->assertStatus(422)
+            ->assertJsonPath('message', 'Vous devez accepter les frais de livraison de 1000 FCFA qui s\'ajoutent à votre total avant de confirmer la commande.');
+
+        $this->assertDatabaseCount('orders', 0);
+    }
+
+    public function test_checkout_free_shipping_does_not_require_approval(): void
+    {
+        $user = $this->buyer();
+        $seller = $this->seller();
+        $product = $this->product($seller, 'Gros Colis', 30000);
+
+        $this->actingAs($user, 'sanctum')
+            ->postJson('/api/v1/cart/items', ['product_id' => $product->id, 'quantity' => 1]);
+
+        // Au-delà du seuil, la livraison est offerte : aucune case requise.
+        $this->actingAs($user, 'sanctum')
+            ->postJson('/api/v1/checkout', $this->addressPayload())
+            ->assertCreated();
+
+        $this->assertDatabaseHas('orders', ['shipping_rate_minor' => 0, 'total_minor' => 30000]);
+    }
+
+    public function test_checkout_refuses_when_seller_has_no_position(): void
+    {
+        $user = $this->buyer();
+        $seller = Seller::factory()->create([
+            'user_id' => User::factory()->create()->id,
+            'status' => 'active',
+            'location_lat' => null,
+            'location_lng' => null,
+        ]);
+        User::query()->whereKey($seller->user_id)->first()?->assignRole(Role::Seller);
+        $product = $this->product($seller, 'Colis Sans Position', 1000);
+
+        $this->actingAs($user, 'sanctum')
+            ->postJson('/api/v1/cart/items', ['product_id' => $product->id, 'quantity' => 1]);
+
+        $this->actingAs($user, 'sanctum')
+            ->postJson('/api/v1/checkout', $this->addressPayload(['shipping_approved' => true]))
+            ->assertStatus(422)
+            ->assertJsonPath('message', 'La boutique « '.$seller->shop_name.' » doit définir sa position pour calculer les frais de livraison.');
+
+        $this->assertDatabaseCount('orders', 0);
     }
 
     public function test_checkout_creates_commissions_for_seller(): void
@@ -243,7 +279,7 @@ class CheckoutTest extends TestCase
             ->postJson('/api/v1/cart/items', ['product_id' => $product->id, 'quantity' => 1]);
 
         $this->actingAs($user, 'sanctum')
-            ->postJson('/api/v1/checkout', $this->addressPayload());
+            ->postJson('/api/v1/checkout', $this->addressPayload(['shipping_approved' => true]));
 
         $this->assertDatabaseHas('commissions', [
             'seller_id' => $seller->id,
@@ -251,5 +287,49 @@ class CheckoutTest extends TestCase
             'rate_bps' => 100,
             'status' => 'pending',
         ]);
+    }
+
+    public function test_estimate_returns_routed_fee_for_priciable_shop(): void
+    {
+        $user = $this->buyer();
+
+        // Boutique de test : position par défaut (Douala) → distance 0.
+        $seller = $this->seller();
+        $product = $this->product($seller, 'Colis Estimé', 1000);
+
+        $this->actingAs($user, 'sanctum')
+            ->postJson('/api/v1/cart/items', ['product_id' => $product->id, 'quantity' => 1]);
+
+        $this->actingAs($user, 'sanctum')
+            ->postJson('/api/v1/checkout/estimate', [
+                'address' => ['address_line1' => 'Rue 1', 'city' => 'Douala', 'latitude' => 4.0511, 'longitude' => 9.7679],
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.shipping_total', 1000)
+            ->assertJsonPath('data.sellers.0.shipping', 1000)
+            ->assertJsonPath('data.sellers.0.shipping_free', false);
+    }
+
+    public function test_estimate_returns_null_for_shop_without_position(): void
+    {
+        $user = $this->buyer();
+        $seller = Seller::factory()->create([
+            'user_id' => User::factory()->create()->id,
+            'status' => 'active',
+            'location_lat' => null,
+            'location_lng' => null,
+        ]);
+        User::query()->whereKey($seller->user_id)->first()?->assignRole(Role::Seller);
+        $product = $this->product($seller, 'Colis Sans Position', 1000);
+
+        $this->actingAs($user, 'sanctum')
+            ->postJson('/api/v1/cart/items', ['product_id' => $product->id, 'quantity' => 1]);
+
+        $this->actingAs($user, 'sanctum')
+            ->postJson('/api/v1/checkout/estimate', [
+                'address' => ['address_line1' => 'Rue 1', 'city' => 'Douala', 'latitude' => 4.0511, 'longitude' => 9.7679],
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.shipping_total', null);
     }
 }

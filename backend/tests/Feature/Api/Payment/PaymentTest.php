@@ -60,7 +60,7 @@ class PaymentTest extends TestCase
 
         $this->actingAs($user, 'sanctum')
             ->postJson('/api/v1/checkout', [
-                'address' => ['address_line1' => 'Rue 1', 'city' => 'Douala'],
+                'address' => ['address_line1' => 'Rue 1', 'city' => 'Douala', 'latitude' => 4.0511, 'longitude' => 9.7679],
                 'payment_method' => $method,
                 'mobile_money_phone' => '691234567',
                 'shipping_approved' => true,

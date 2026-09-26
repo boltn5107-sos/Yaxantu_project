@@ -18,11 +18,13 @@ class PaymentController extends Controller
 
     /**
      * Liste des méthodes de paiement disponibles (publique, utilisée par le
-     * formulaire de commande).
+     * formulaire de commande) et règles d'affichage du checkout.
      */
     public function methods(): JsonResponse
     {
-        return response()->json(['data' => $this->payments->methods()]);
+        return response()->json([
+            'data' => $this->payments->methods(),
+        ]);
     }
 
     /**

@@ -17,7 +17,7 @@ class HealthTest extends TestCase
             ->assertOk()
             ->assertJsonPath('status', 'ok')
             ->assertJsonPath('database', 'connected')
-            ->assertJsonPath('service', 'Yaxantu');
+            ->assertJsonPath('service', 'Taaba-taaba');
     }
 
     public function test_categories_returns_seeded_main_categories(): void
@@ -28,7 +28,7 @@ class HealthTest extends TestCase
 
         $response
             ->assertOk()
-            ->assertJsonCount(4, 'data')
+            ->assertJsonCount(11, 'data')
             ->assertJsonStructure([
                 'data' => [
                     '*' => [

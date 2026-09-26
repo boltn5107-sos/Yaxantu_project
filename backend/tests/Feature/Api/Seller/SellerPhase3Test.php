@@ -101,7 +101,7 @@ class SellerPhase3Test extends TestCase
 
         $this->actingAs($buyer, 'sanctum')
             ->postJson('/api/v1/checkout', [
-                'address' => ['address_line1' => 'Rue 1', 'city' => 'Douala'],
+                'address' => ['address_line1' => 'Rue 1', 'city' => 'Douala', 'latitude' => 4.0511, 'longitude' => 9.7679],
                 'payment_method' => 'cod',
                 'shipping_approved' => true,
             ])
@@ -224,7 +224,7 @@ class SellerPhase3Test extends TestCase
             ->postJson('/api/v1/cart/items', ['product_id' => $product->id, 'quantity' => 1]);
         $this->actingAs($buyer, 'sanctum')
             ->postJson('/api/v1/checkout', [
-                'address' => ['address_line1' => 'Rue 1', 'city' => 'Yaoundé'],
+                'address' => ['address_line1' => 'Rue 1', 'city' => 'Yaoundé', 'latitude' => 3.8667, 'longitude' => 11.5167],
                 'payment_method' => 'cod',
                 'shipping_approved' => true,
             ]);

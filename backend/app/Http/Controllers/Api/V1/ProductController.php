@@ -4,9 +4,11 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Resources\ProductResource;
 use App\Models\Product;
+use App\Support\ImageHash;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Validation\ValidationException;
 
 class ProductController extends Controller
 {
@@ -58,6 +60,71 @@ class ProductController extends Controller
             ->firstOrFail();
 
         return new ProductResource($product);
+    }
+
+    /**
+     * Recherche visuelle inversée : une photo en entrée, les produits les
+     * plus proches (signature perceptuelle dHash) en sortie.
+     *
+     * Les signatures sont pré-calculées au moment de l'upload (voir
+     * SellerProductController::attachMedia) ; la commande
+     * « product:image-hashes » permet de backfiller les anciennes images.
+     */
+    public function visualSearch(Request $request): AnonymousResourceCollection
+    {
+        $request->validate([
+            'image' => ['required', 'image', 'max:10240', 'mimes:jpeg,jpg,png,webp,gif,bmp'],
+        ]);
+
+        $hash = ImageHash::compute($request->file('image')->getRealPath());
+
+        if ($hash === null) {
+            throw ValidationException::withMessages([
+                'image' => ['Cette image ne peut pas être lue. Réessayez avec un autre fichier.'],
+            ]);
+        }
+
+        $products = Product::query()
+            ->with(['images:id,product_id,kind,image_hash,path', 'seller', 'category.translations'])
+            ->where('is_active', true)
+            ->where('visibility', 'public')
+            ->whereHas('seller', fn (Builder $q) => $q->where('status', 'active'))
+            ->has('images')
+            ->get();
+
+        $ranked = [];
+
+        foreach ($products as $product) {
+            $best = null;
+
+            foreach ($product->images as $image) {
+                if ($image->kind !== 'image' || ! ImageHash::valid($image->image_hash)) {
+                    continue;
+                }
+
+                $distance = ImageHash::hamming($hash, (string) $image->image_hash);
+                $best = $best === null ? $distance : min($best, $distance);
+            }
+
+            if ($best !== null) {
+                $ranked[] = ['product' => $product, 'distance' => $best];
+            }
+        }
+
+        usort($ranked, fn (array $a, array $b): int => $a['distance'] <=> $b['distance']);
+
+        // Admission stricte : signatures très proches (≤ 24/64). Si le résultat
+        // est trop maigre, on renvoie les plus proches pour rester utile.
+        $results = collect($ranked)
+            ->filter(fn (array $row): bool => $row['distance'] <= 24)
+            ->pluck('product')
+            ->take(24);
+
+        if ($results->count() < 6) {
+            $results = collect($ranked)->pluck('product')->slice(0, 24);
+        }
+
+        return ProductResource::collection($results->values());
     }
 
     private function applyFilters(Builder $query, array $filters): void

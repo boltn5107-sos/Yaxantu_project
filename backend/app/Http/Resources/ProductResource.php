@@ -14,7 +14,9 @@ class ProductResource extends JsonResource
     {
         $images = $this->whenLoaded('images');
         $primary = $this->whenLoaded('images')
-            ? $this->images->firstWhere('is_primary', true) ?? $this->images->first()
+            ? $this->images->filter(fn ($image) => $image->kind === 'image')
+                ->firstWhere('is_primary', true)
+                ?? $this->images->filter(fn ($image) => $image->kind === 'image')->first()
             : null;
 
         return [
@@ -40,6 +42,7 @@ class ProductResource extends JsonResource
                     'path' => Media::url($image->path),
                     'alt_text' => $image->alt_text,
                     'is_primary' => (bool) $image->is_primary,
+                    'kind' => $image->kind ?? 'image',
                 ])->values()
                 : [],
             'seller' => $this->whenLoaded('seller', fn () => [

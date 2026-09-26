@@ -4,7 +4,7 @@ use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
-| API Routes — Yaxantu v1
+| API Routes — Taaba-taaba v1
 |--------------------------------------------------------------------------
 */
 
@@ -28,6 +28,12 @@ Route::prefix('v1')->group(function () {
 
     Route::get('/products', [App\Http\Controllers\Api\V1\ProductController::class, 'index'])
         ->name('api.v1.products.index');
+
+    // Recherche par image (recherche visuelle inversée) : photo → produits similaires.
+
+    Route::post('/products/visual-search', [App\Http\Controllers\Api\V1\ProductController::class, 'visualSearch'])
+        ->middleware('throttle:visual-search')
+        ->name('api.v1.products.visual-search');
 
     Route::get('/products/{slug}', [App\Http\Controllers\Api\V1\ProductController::class, 'show'])
         ->name('api.v1.products.show');
@@ -123,6 +129,9 @@ Route::prefix('v1')->group(function () {
             ->name('api.v1.addresses.destroy');
 
         // ── Commandes & checkout ────────────────────────────────────────
+
+        Route::post('/checkout/estimate', [App\Http\Controllers\Api\V1\Checkout\CheckoutController::class, 'estimate'])
+            ->name('api.v1.checkout.estimate');
 
         Route::post('/checkout', [App\Http\Controllers\Api\V1\Checkout\CheckoutController::class, 'store'])
             ->name('api.v1.checkout.store');
@@ -257,6 +266,19 @@ Route::prefix('v1')->group(function () {
             Route::get('/analytics', [App\Http\Controllers\Api\V1\Seller\SellerAnalyticsController::class, 'index'])
                 ->name('api.v1.seller.analytics');
 
+            // Module Comptabilité : rapport périodisé, dépenses et objectif.
+            Route::get('/accounting', [App\Http\Controllers\Api\V1\Seller\SellerAccountingController::class, 'report'])
+                ->name('api.v1.seller.accounting');
+
+            Route::post('/expenses', [App\Http\Controllers\Api\V1\Seller\SellerAccountingController::class, 'storeExpense'])
+                ->name('api.v1.seller.expenses.store');
+
+            Route::delete('/expenses/{expense}', [App\Http\Controllers\Api\V1\Seller\SellerAccountingController::class, 'destroyExpense'])
+                ->name('api.v1.seller.expenses.destroy');
+
+            Route::put('/goal', [App\Http\Controllers\Api\V1\Seller\SellerAccountingController::class, 'updateGoal'])
+                ->name('api.v1.seller.goal');
+
             // Produits du vendeur (la boutique doit exister pour créer).
             Route::get('/products', [App\Http\Controllers\Api\V1\Seller\SellerProductController::class, 'index'])
                 ->name('api.v1.seller.products.index');
@@ -286,6 +308,9 @@ Route::prefix('v1')->group(function () {
 
         Route::post('/seller/shop/share', [App\Http\Controllers\Api\V1\ShopController::class, 'trackShare'])
             ->name('api.v1.seller.shop.share');
+
+        Route::put('/seller/shop/location', [App\Http\Controllers\Api\V1\ShopController::class, 'updateLocation'])
+            ->name('api.v1.seller.shop.location');
 
         // ── Marketing : codes promo + parrainage ─────────────────────────
 
@@ -322,6 +347,20 @@ Route::prefix('v1')->group(function () {
 
         Route::post('/disputes/{dispute}/messages', [App\Http\Controllers\Api\V1\DisputeController::class, 'message'])
             ->name('api.v1.disputes.messages');
+
+        // ── Discussion acheteur ↔ vendeur (texte + note vocale) ───────────
+
+        Route::get('/messages', [App\Http\Controllers\Api\V1\MessagingController::class, 'index'])
+            ->name('api.v1.messages.index');
+
+        Route::post('/messages/start', [App\Http\Controllers\Api\V1\MessagingController::class, 'start'])
+            ->name('api.v1.messages.start');
+
+        Route::get('/messages/{conversation}', [App\Http\Controllers\Api\V1\MessagingController::class, 'show'])
+            ->name('api.v1.messages.show');
+
+        Route::post('/messages/{conversation}/messages', [App\Http\Controllers\Api\V1\MessagingController::class, 'store'])
+            ->name('api.v1.messages.store');
 
         // ── Livreur (phase 3) ─────────────────────────────────────────────
 
@@ -456,6 +495,14 @@ Route::prefix('v1')->group(function () {
 
             Route::get('/referrals', [App\Http\Controllers\Api\V1\Admin\AdminReferralController::class, 'index'])
                 ->name('api.v1.admin.referrals.index');
+
+            // Configuration du checkout : paiement à la livraison + codes promo.
+            Route::get('/config/checkout', [App\Http\Controllers\Api\V1\Admin\AdminConfigController::class, 'checkout'])
+                ->name('api.v1.admin.config.checkout');
+
+            Route::put('/config/checkout', [App\Http\Controllers\Api\V1\Admin\AdminConfigController::class, 'updateCheckout'])
+                ->middleware('can:promocodes.manage')
+                ->name('api.v1.admin.config.checkout.update');
 
             // Influenceurs : programme d'affiliation (sommes pilotées).
             Route::get('/affiliates', [App\Http\Controllers\Api\V1\Admin\AdminAffiliateController::class, 'index'])

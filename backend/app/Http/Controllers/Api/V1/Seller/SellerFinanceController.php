@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Api\V1\Seller;
 
 use App\Http\Controllers\Api\V1\Controller;
+use App\Models\Seller;
+use App\Models\SellerTransaction;
 use App\Services\CommissionService;
 use App\Services\PayoutService;
 use Illuminate\Http\JsonResponse;
@@ -61,6 +63,8 @@ class SellerFinanceController extends Controller
                         'requested_at' => $p->requested_at?->toIso8601String(),
                     ]),
                 'payout_method' => $seller->payout_method,
+                'summary' => $this->accountingSummary($seller),
+                'by_month' => $this->monthlyBreakdown($seller),
                 'transactions' => collect($transactions->items())->map(fn ($t) => [
                     'id' => $t->id,
                     'type' => $t->type,
@@ -80,6 +84,83 @@ class SellerFinanceController extends Controller
                 ],
             ],
         ]);
+    }
+
+    /**
+     * Synthèse comptable (grand-livre) du vendeur : chiffre d'affaires brut,
+     * commissions, frais, net des ventes, encours de séquestre, retraits et
+     * résultat net de trésorerie. Uniquement dérivé des écritures, jamais
+     * recalculé à la volée à partir du solde.
+     */
+    private function accountingSummary(Seller $seller): array
+    {
+        $total = function (string $type, ?string $direction, string $column = 'amount_minor') use ($seller): int {
+            $q = SellerTransaction::query()
+                ->where('seller_id', $seller->getKey())
+                ->where('type', $type);
+
+            if ($direction !== null) {
+                $q->where('direction', $direction);
+            }
+
+            return (int) $q->sum($column);
+        };
+
+        $salesGross = $total('sale', 'in');
+        $commissions = $total('sale', 'in', 'commission_minor');
+        $fees = $total('sale', 'in', 'fee_minor');
+        $netSales = $total('sale', 'in', 'net_minor');
+        $payouts = $total('payout', 'out');
+        $payoutFees = $total('payout', 'out', 'fee_minor');
+        $reversals = $total('payout_reversal', 'out');
+
+        return [
+            'sales_count' => (int) SellerTransaction::query()
+                ->where('seller_id', $seller->getKey())
+                ->where('type', 'sale')
+                ->count(),
+            'sales_gross' => $salesGross,
+            'commissions' => $commissions,
+            'fees' => $fees,
+            'net_sales' => $netSales,
+            'released_escrow' => $total('release', 'in'),
+            'payouts' => $payouts,
+            'payout_fees' => $payoutFees,
+            'payout_reversals' => $reversals,
+            'net_cash' => $netSales - $payouts - $payoutFees + $reversals,
+        ];
+    }
+
+    /**
+     * Répartition mensuelle des ventes (6 derniers mois), agrégée en base.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function monthlyBreakdown(Seller $seller, int $months = 6): array
+    {
+        return SellerTransaction::query()
+            ->where('seller_id', $seller->getKey())
+            ->where('type', 'sale')
+            ->where('created_at', '>=', now()->subMonths($months - 1)->startOfMonth())
+            ->selectRaw('DATE_FORMAT(created_at, "%Y-%m") as month')
+            ->selectRaw('COUNT(*) as sales_count')
+            ->selectRaw('SUM(amount_minor) as gross')
+            ->selectRaw('SUM(commission_minor) as commissions')
+            ->selectRaw('SUM(fee_minor) as fees')
+            ->selectRaw('SUM(net_minor) as net')
+            ->groupBy('month')
+            ->orderByDesc('month')
+            ->get()
+            ->map(fn ($row) => [
+                'label' => $row->month,
+                'sales_count' => (int) $row->sales_count,
+                'gross' => (int) $row->gross,
+                'commissions' => (int) $row->commissions,
+                'fees' => (int) $row->fees,
+                'net' => (int) $row->net,
+            ])
+            ->values()
+            ->all();
     }
 
     public function payout(Request $request): JsonResponse

@@ -41,6 +41,7 @@ class AppServiceProvider extends ServiceProvider
     {
         RateLimiter::for('health', fn (): Limit => Limit::perMinute(60));
         RateLimiter::for('otp', fn (): Limit => Limit::perMinute(5)->by(request()?->user()?->id ?: request()?->ip()));
+        RateLimiter::for('visual-search', fn (): Limit => Limit::perMinute(30)->by(request()?->ip()));
     }
 
     /**

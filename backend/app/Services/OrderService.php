@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Enums\AuditEvent;
 use App\Enums\OrderStatus;
+use App\Models\Address;
 use App\Models\Cart;
 use App\Models\CartItem;
 use App\Models\Delivery;
@@ -12,6 +13,7 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Payment;
 use App\Models\Product;
+use App\Models\Seller;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -33,19 +35,22 @@ class OrderService
         private readonly CommissionService $commissions,
         private readonly DeliveryAssignmentService $assigner,
         private readonly AffiliateService $affiliates,
+        private readonly DeliveryFareService $fares,
     ) {}
 
     /**
      * Convertit le panier en commandes (une par vendeur).
      *
-     * @param array<string, mixed> $addressData données d'adresse de livraison
-     * @param array<string, mixed> $paymentOptions options (téléphone, etc.)
+     * @param  array<string, mixed>  $addressData  données d'adresse de livraison
+     * @param  array<string, mixed>  $paymentOptions  options (téléphone, etc.)
      */
     public function checkout(User $user, Cart $cart, array $addressData, string $paymentMethod = 'cod', array $paymentOptions = [], bool $shippingApproved = false, ?string $promoCode = null): array
     {
         $this->assertCartNotEmpty($cart);
 
         $address = $this->createShippingAddress($user, $addressData);
+        $this->assertShippingPositionKnown($cart, $address);
+        $this->assertSellerPositionsKnown($cart);
         $promos = app(PromoService::class);
 
         $orders = [];
@@ -75,7 +80,30 @@ class OrderService
                     ? (int) floor(($orderSubtotal / $globalSubtotal) * $globalDiscount)
                     : 0;
 
-                $order = $this->createOrder($user, (int) $sellerId, $items, $address, $cart->currency, $shippingApproved, $shareDiscount, $promo?->id);
+                $seller = Seller::query()->find($sellerId);
+
+                // Le tarif ne porte que sur les articles livrés du vendeur,
+                // comme dans l'estimation : les produits numériques ne sont
+                // pas facturés ni n'atteignent le seuil de gratuité.
+                $orderShippingRate = 0;
+                if ($seller !== null) {
+                    $shippingItems = $items->filter(fn ($item) => $item->requires_shipping);
+                    $orderShippingRate = $shippingItems->isEmpty()
+                        ? 0
+                        : ($this->fares->fareFor($seller, $address, (int) $shippingItems->sum('total_minor')) ?? 0);
+                }
+
+                // Toute livraison facturée doit avoir été explicitement
+                // acceptée (case à cocher « J'accepte les frais ») avec le
+                // montant affiché : montré = facturé.
+                if ($orderShippingRate > 0 && ! $shippingApproved) {
+                    throw new RuntimeException(sprintf(
+                        'Vous devez accepter les frais de livraison de %d FCFA qui s\'ajoutent à votre total avant de confirmer la commande.',
+                        $orderShippingRate,
+                    ));
+                }
+
+                $order = $this->createOrder($user, (int) $sellerId, $items, $address, $cart->currency, $shareDiscount, $promo?->id, $orderShippingRate);
                 $orders[] = $order;
 
                 $this->decrementStock($items);
@@ -139,19 +167,9 @@ class OrderService
         return $order;
     }
 
-    public function createOrder(User $user, int $sellerId, $items, $address, string $currency = 'XOF', bool $shippingApproved = false, int $discountMinor = 0, ?int $promoCodeId = null): Order
+    public function createOrder(User $user, int $sellerId, $items, $address, string $currency = 'XOF', int $discountMinor = 0, ?int $promoCodeId = null, int $shippingRate = 0): Order
     {
         $subtotal = $items->sum(fn ($item) => (int) $item->total_minor);
-        $shippingRate = $items->contains(fn ($item) => $item->requires_shipping)
-            ? ($subtotal >= 25000 ? 0 : 2000)
-            : 0;
-
-        if ($shippingRate > 0 && ! $shippingApproved) {
-            throw new RuntimeException(sprintf(
-                'Vous devez accepter les frais de livraison de %d FCFA avant de confirmer la commande.',
-                $shippingRate,
-            ));
-        }
 
         $order = Order::create([
             'user_id' => $user->getKey(),
@@ -161,7 +179,6 @@ class OrderService
             'payment_status' => 'pending',
             'shipping_status' => 'pending',
             'shipping_address_id' => $address?->getKey(),
-            'shipping_method' => 'standard',
             'shipping_rate_minor' => $shippingRate,
             'subtotal_minor' => $subtotal,
             'discount_minor' => $discountMinor,
@@ -234,9 +251,36 @@ class OrderService
             'city' => $data['city'],
             'state_province' => $data['state_province'] ?? null,
             'postal_code' => $data['postal_code'] ?? null,
-            'country_code' => $data['country_code'] ?? 'CM',
+            'country_code' => $data['country_code'] ?? 'SN',
             'phone' => $data['phone'] ?? $user->phone,
+            'latitude' => $data['latitude'] ?? null,
+            'longitude' => $data['longitude'] ?? null,
             'is_default' => ! $user->addresses()->exists(),
+        ]);
+    }
+
+    /**
+     * Adresse utilisée pour l'estimation des frais de livraison (jamais
+     * persistée) : l'adresse enregistrée si fournie, sinon une adresse
+     * transitoire bâtie à partir de la position saisie. null sans coordonnées.
+     */
+    public function estimateAddressFor(User $user, array $data, mixed $shippingAddressId = null): ?Address
+    {
+        if ($shippingAddressId !== null) {
+            return $user->addresses()->whereKey($shippingAddressId)->first();
+        }
+
+        $latitude = $data['latitude'] ?? null;
+        $longitude = $data['longitude'] ?? null;
+        if ($latitude === null || $longitude === null) {
+            return null;
+        }
+
+        return new Address([
+            'latitude' => $latitude,
+            'longitude' => $longitude,
+            'address_line1' => $data['address_line1'] ?? '',
+            'city' => $data['city'] ?? '',
         ]);
     }
 
@@ -267,6 +311,59 @@ class OrderService
     {
         if ($cart->items->isEmpty()) {
             throw new RuntimeException('Votre panier est vide.');
+        }
+    }
+
+    /**
+     * La position (coordonnées) du client est obligatoire dès qu'un article du
+     * panier nécessite la livraison : sans elle, aucun tarif réel ne peut être
+     * calculé puis affiché (montré = facturé). On refuse plutôt que de facturer
+     * un forfait qui n'a jamais été présenté au client.
+     */
+    private function assertShippingPositionKnown(Cart $cart, Address $address): void
+    {
+        if (! $cart->items->contains(fn ($item) => $item->requires_shipping)) {
+            return;
+        }
+
+        if (! $this->fares->hasCoordinates($address)) {
+            throw new RuntimeException('Placez votre position sur la carte pour calculer les frais de livraison.');
+        }
+    }
+
+    /**
+     * Chaque boutique dont des articles doivent être livrés doit avoir défini
+     * sa position : sans elle, aucun trajet ne peut être tarifé (montré =
+     * facturé). La position de la boutique est exigée comme toute information
+     * de la fiche : les boutiques existantes doivent la renseigner, les
+     * nouvelles l'ont obligatoirement via l'onboarding (étape 4).
+     */
+    private function assertSellerPositionsKnown(Cart $cart): void
+    {
+        $shippingGroups = $cart->items
+            ->filter(fn ($item) => $item->requires_shipping)
+            ->groupBy('seller_id');
+
+        foreach ($shippingGroups as $sellerId => $items) {
+            $subtotal = (int) $items->sum('total_minor');
+
+            // Au-delà du seuil la livraison est offerte : la distance n'est
+            // pas nécessaire pour facturer.
+            if ($subtotal >= $this->config->deliveryFreeThresholdMinor()) {
+                continue;
+            }
+
+            $seller = Seller::query()->find($sellerId);
+            if ($seller === null) {
+                continue;
+            }
+
+            if (! $this->fares->sellerHasCoordinates($seller)) {
+                throw new RuntimeException(sprintf(
+                    'La boutique « %s » doit définir sa position pour calculer les frais de livraison.',
+                    $seller->shop_name,
+                ));
+            }
         }
     }
 

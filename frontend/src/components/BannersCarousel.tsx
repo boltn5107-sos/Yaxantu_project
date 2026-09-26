@@ -2,12 +2,14 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { ArrowLeft, ArrowRight } from "lucide-react";
-import { getBanners, type Banner } from "@/lib/api";
+import { getBanners, mediaUrl, type Banner } from "@/lib/api";
 
 export default function BannersCarousel() {
   const [banners, setBanners] = useState<Banner[]>([]);
   const [index, setIndex] = useState(0);
+  const t = useTranslations("home");
 
   useEffect(() => {
     getBanners()
@@ -39,7 +41,7 @@ export default function BannersCarousel() {
         )}
         <div className="relative z-10 flex h-full max-w-xl flex-col justify-center px-8 sm:px-12">
           <span className="inline-flex w-fit items-center rounded-full bg-white/15 px-3 py-1 text-xs font-medium uppercase tracking-wider text-white/90 backdrop-blur">
-            Yaxantu
+            Taaba-taaba
           </span>
           <h2 className="mt-3 text-2xl sm:text-3xl font-bold text-balance">
             {banner.title}
@@ -54,7 +56,7 @@ export default function BannersCarousel() {
             <button
               type="button"
               onClick={() => setIndex((i) => (i - 1 + count) % count)}
-              aria-label="Bannière précédente"
+              aria-label={t("bannerPrev")}
               className="absolute left-4 top-1/2 z-20 -translate-y-1/2 rounded-full bg-white/15 p-2 backdrop-blur hover:bg-white/30 transition-colors"
             >
               <ArrowLeft className="h-5 w-5" />
@@ -62,7 +64,7 @@ export default function BannersCarousel() {
             <button
               type="button"
               onClick={() => setIndex((i) => (i + 1) % count)}
-              aria-label="Bannière suivante"
+              aria-label={t("bannerNext")}
               className="absolute right-4 top-1/2 z-20 -translate-y-1/2 rounded-full bg-white/15 p-2 backdrop-blur hover:bg-white/30 transition-colors"
             >
               <ArrowRight className="h-5 w-5" />
@@ -73,7 +75,7 @@ export default function BannersCarousel() {
                   key={b.id}
                   type="button"
                   onClick={() => setIndex(i)}
-                  aria-label={`Bannière ${i + 1}`}
+                  aria-label={t("bannerIndex", { index: i + 1 })}
                   className={`h-2 rounded-full transition-all ${i === index ? "w-6 bg-white" : "w-2 bg-white/50 hover:bg-white/80"}`}
                 />
               ))}
@@ -88,7 +90,7 @@ export default function BannersCarousel() {
 function BannerImage({ src }: { src: string }) {
   return (
     <div className="absolute inset-0">
-      <img src={src} alt="" className="h-full w-full object-cover" />
+      <img src={mediaUrl(src) ?? ""} alt="" className="h-full w-full object-cover" />
       <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/40 to-transparent" />
     </div>
   );

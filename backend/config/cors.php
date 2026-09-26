@@ -7,7 +7,7 @@ return [
     | Cross-Origin Resource Sharing (CORS) Configuration
     |--------------------------------------------------------------------------
     |
-    | Yaxantu est une SPA (Next.js) qui consomme l'API Laravel avec des cookies
+    | Taaba-taaba est une SPA (Next.js) qui consomme l'API Laravel avec des cookies
     | de session (Sanctum). `supports_credentials` DOIT rester à true pour que
     | les cookies httpOnly soient acceptés par le navigateur.
     |
